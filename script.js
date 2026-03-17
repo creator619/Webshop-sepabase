@@ -416,7 +416,7 @@ if (window.location.pathname.includes("checkout.html")) {
 
     const orderBtn = document.querySelector(".place-order-btn");
     if (orderBtn) {
-        orderBtn.addEventListener("click", () => {
+        orderBtn.addEventListener("click", async () => {
             const name = document.getElementById("name").value;
             const email = document.getElementById("email").value;
             const phone = document.getElementById("phone").value;
@@ -435,20 +435,22 @@ if (window.location.pathname.includes("checkout.html")) {
                 return;
             }
 
-            const session = supabaseClient.auth.getSession();
-            const userId = session?.user?.id || null;
+            try {
+                // 1. Session lekérése (fontos, hogy az aktuálisat kapjuk meg)
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                const userId = session?.user?.id || null;
 
-            // 1. Rendelés beszúrása
-            supabaseClient.from('orders').insert({
-                user_email: email,
-                user_id: userId,
-                total_price: total,
-                status: 'pending'
-            }).select().single()
-            .then(({ data: order, error: orderError }) => {
+                // 2. Rendelés beszúrása
+                const { data: order, error: orderError } = await supabaseClient.from('orders').insert({
+                    user_email: email,
+                    user_id: userId,
+                    total_price: total,
+                    status: 'pending'
+                }).select().single();
+
                 if (orderError) throw orderError;
 
-                // 2. Tételek beszúrása
+                // 3. Tételek beszúrása
                 const orderItems = cart.map(item => ({
                     order_id: order.id,
                     product_name: item.name,
@@ -456,35 +458,28 @@ if (window.location.pathname.includes("checkout.html")) {
                     quantity: item.quantity || 1
                 }));
 
-                return supabaseClient.from('order_items').insert(orderItems);
-            })
-            .then(({ error: itemsError }) => {
+                const { error: itemsError } = await supabaseClient.from('order_items').insert(orderItems);
                 if (itemsError) throw itemsError;
 
-                // 3. Készlet levonása (Egyszerűsítve, ciklusban - admin felületen is érdemes kezelni)
-                const stockUpdates = cart.map(item => {
-                    return supabaseClient.rpc('increment_stock', { row_id: item.id, amount: -(item.quantity || 1) });
-                });
-                
-                // Megjegyzés: A 'increment_stock' egy SQL függvény a Supabase-en, ha nincs meg, sima update-et is írhatunk
-                // De maradjunk a biztosabb módszernél:
+                // 4. Készlet levonása RPC-vel (biztonságosabb és atomi)
                 const updatePromises = cart.map(item => {
-                    return supabaseClient.from('products').update({ stock: (item.stock || 10) - (item.quantity || 1) }).eq('id', item.id);
+                    return supabaseClient.rpc('increment_stock', { 
+                        product_id: item.id, 
+                        amount: -(item.quantity || 1) 
+                    });
                 });
 
-                return Promise.all(updatePromises);
-            })
-            .then(() => {
+                await Promise.all(updatePromises);
+
                 showToast("Rendelés sikeresen leadva!");
                 localStorage.removeItem("cart");
                 setTimeout(() => {
                     window.location.href = "index.html";
                 }, 1500);
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error(err);
                 showToast("Hiba történt a rendelés leadásakor: " + (err.message || "Ismeretlen hiba"));
-            });
+            }
         });
     }
 }
