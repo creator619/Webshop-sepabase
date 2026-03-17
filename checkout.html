@@ -10,20 +10,24 @@
 
 <body>
 
+    <!-- Főmenü navigáció -->
     <nav class="menu">
         <button class="mobile-menu-toggle" id="mobile-menu-toggle">☰</button>
         <ul id="main-menu">
             <li onclick="window.location.href='index.html'">Főoldal</li>
             <li onclick="window.location.href='cart.html'">Kosár</li>
+            <!-- Felhasználói státusz (bejelentkezés/kijelentkezés) -->
             <div id="user-nav" class="user-status"></div>
         </ul>
     </nav>
 
+    <!-- Pénztár oldal fő tartalma -->
     <main class="checkout-page">
         <h1>Rendelés véglegesítése</h1>
 
         <div class="checkout-container">
 
+            <!-- Szállítási és vásárlói adatok űrlapja -->
             <div class="checkout-form">
                 <h2>Szállítási adatok</h2>
 
@@ -39,6 +43,7 @@
                 <label for="address">Szállítási cím</label>
                 <input type="text" id="address" placeholder="Város, utca, házszám">
 
+                <!-- Szállítási mód választó -->
                 <div class="checkout-section">
                     <h3>Szállítási mód</h3>
                     <div class="radio-group">
@@ -55,6 +60,7 @@
                     </div>
                 </div>
 
+                <!-- Fizetési mód választó -->
                 <div class="checkout-section">
                     <h3>Fizetési mód</h3>
                     <div class="radio-group">
@@ -71,23 +77,29 @@
                     </div>
                 </div>
 
+                <!-- Rendelés leadása gomb (a script.js-ben lévő eseménykezelővel) -->
                 <button class="place-order-btn">Rendelés leadása</button>
             </div>
 
+            <!-- Rendelés összegzése (jobb oldali sáv) -->
             <div class="checkout-summary">
                 <h2>Rendelés összegzése</h2>
+                <!-- A kosárban lévő termékek listája ide kerül dinamikusan -->
                 <div id="checkout-items"></div>
 
+                <!-- Számított végösszeg (termékek + szállítás) -->
                 <h3>Végösszeg: <span id="checkout-total">0 Ft</span></h3>
             </div>
 
         </div>
     </main>
 
+    <!-- Ingyenes szállításról tájékoztató banner -->
     <div class="shipping-banner">
         <span>🚚 10.000 Ft felett <strong>INGYENES</strong> a szállítás!</span>
     </div>
 
+    <!-- Weboldal lábléce -->
     <footer class="site-footer">
         <div class="footer-container">
             <div class="footer-section">
@@ -125,6 +137,7 @@
         </div>
     </footer>
 
+    <!-- Értesítések tárolója -->
     <div id="toast-container" class="toast-container"></div>
 
     <!-- Supabase Client -->
