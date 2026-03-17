@@ -10,36 +10,49 @@
 
 <body>
 
+    <!-- Navigációs menü -->
     <nav class="menu">
         <button class="mobile-menu-toggle" id="mobile-menu-toggle">☰</button>
         <ul id="main-menu">
             <li onclick="window.location.href='index.html'">Főoldal</li>
             <li onclick="window.location.href='login.html'">Bejelentkezés</li>
+            <!-- Felhasználói állapot helye -->
             <div id="user-nav" class="user-status"></div>
         </ul>
     </nav>
 
+    <!-- Regisztrációs oldal fő tartalma -->
     <main class="auth-page">
         <h1>Regisztráció</h1>
 
         <div class="auth-container">
-            <label>Név</label>
-            <input type="text" id="reg-name">
+            <!-- Név megadása -->
+            <label for="reg-name">Név</label>
+            <input type="text" id="reg-name" placeholder="Teljes név">
 
-            <label>E-mail</label>
-            <input type="email" id="reg-email">
+            <!-- E-mail cím megadása -->
+            <label for="reg-email">E-mail</label>
+            <input type="email" id="reg-email" placeholder="pelda@email.hu">
 
-            <label>Jelszó</label>
-            <input type="password" id="reg-password">
+            <!-- Jelszó megadása -->
+            <label for="reg-password">Jelszó</label>
+            <input type="password" id="reg-password" placeholder="********">
 
+            <!-- Regisztráció gomb (a script.js-ben lévő logikával) -->
             <button class="auth-btn" id="register-btn">Regisztráció</button>
+
+            <p style="margin-top: 15px; font-size: 0.9rem;">
+                Már van fiókod? <a href="login.html">Jelentkezz be itt!</a>
+            </p>
         </div>
     </main>
 
+    <!-- Szállítási banner -->
     <div class="shipping-banner">
         <span>🚚 10.000 Ft felett <strong>INGYENES</strong> a szállítás!</span>
     </div>
 
+    <!-- Lábléc -->
     <footer class="site-footer">
         <div class="footer-container">
             <div class="footer-section">
@@ -77,9 +90,10 @@
         </div>
     </footer>
 
+    <!-- Értesítések helye -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- Supabase Client -->
+    <!-- Supabase Client és logika -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js?v=1.1"></script>
 </body>
