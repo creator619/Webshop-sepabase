@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Felhasználói Profil</title>
+    <link rel="stylesheet" href="style.css?v=1.2">
+</head>
+
+<body>
+
+    <nav class="menu">
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle">☰</button>
+        <ul id="main-menu">
+            <li onclick="window.location.href='index.html'">Főoldal</li>
+            <li onclick="window.location.href='cart.html'" class="cart-menu">
+                Kosár <span id="cart-count">(0)</span>
+            </li>
+            <div id="user-nav" class="user-status"></div>
+        </ul>
+    </nav>
+
+    <main class="profile-page">
+        <h1>Saját Fiók</h1>
+
+        <div class="profile-container">
+            <div class="profile-details">
+                <h2>Adataim</h2>
+                <div id="user-details-card" class="details-card">
+                    <p>Betöltés...</p>
+                </div>
+                <button id="edit-profile-btn" class="btn-primary" style="margin-top: 15px;">Profil szerkesztése</button>
+
+                <!-- Szerkesztő űrlap (alapértelmezetten rejtett) -->
+                <div id="edit-profile-form" class="edit-form" style="display: none; margin-top: 20px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: var(--shadow);">
+                    <h3>Adatok módosítása</h3>
+                    <div class="form-group">
+                        <label for="edit-name">Név</label>
+                        <input type="text" id="edit-name" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-phone">Telefonszám</label>
+                        <input type="text" id="edit-phone" class="form-input" placeholder="+36 30 123 4567">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-address">Szállítási cím</label>
+                        <textarea id="edit-address" class="form-input" rows="3" placeholder="Irányítószám, Város, Utca..."></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button onclick="saveProfileChanges()" class="btn-primary">Mentés</button>
+                        <button onclick="toggleEditForm(false)" class="btn-secondary">Mégse</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="order-history">
+                <h2>Rendeléseim</h2>
+                <div id="orders-list">
+                    <!-- JS fills this -->
+                    <p>Még nincsenek rendeléseid.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="shipping-banner">
+        <span>🚚 10.000 Ft felett <strong>INGYENES</strong> a szállítás!</span>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h4>Rólunk</h4>
+                <p>Prémium férfiruha webshop, ahol a stílus és a minőség találkozik. Válogatott kollekcióinkkal
+                    segítünk, hogy minden alkalommal a legjobb formádat hozhasd.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Gyors Linkek</h4>
+                <ul>
+                    <li><a href="index.html">Főoldal</a></li>
+                    <li><a href="cart.html">Kosár</a></li>
+                    <li><a href="login.html">Bejelentkezés</a></li>
+                    <li><a href="register.html">Regisztráció</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Ügyfélszolgálat</h4>
+                <ul>
+                    <li><a href="#">Szállítási információk</a></li>
+                    <li><a href="#">Gyakori kérdések</a></li>
+                    <li><a href="#">Visszaküldés</a></li>
+                    <li><a href="#">Adatkezelés</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Kapcsolat</h4>
+                <p>Email: info@webshop.hu</p>
+                <p>Telefon: +36 30 123 4567</p>
+                <p>Cím: 1051 Budapest, Fashion utca 12.</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Ruházati Webshop - Minden jog fenntartva.</p>
+        </div>
+    </footer>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="products_data.js?v=1.2"></script>
+    <script src="script.js?v=1.2"></script>
+</body>
+
+</html>

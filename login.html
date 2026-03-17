@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bejelentkezés</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <nav class="menu">
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle">☰</button>
+        <ul id="main-menu">
+            <li onclick="window.location.href='index.html'">Főoldal</li>
+            <li onclick="window.location.href='register.html'">Regisztráció</li>
+            <div id="user-nav" class="user-status"></div>
+        </ul>
+    </nav>
+
+    <main class="auth-page">
+        <h1>Bejelentkezés</h1>
+
+        <div class="auth-container">
+            <label>E-mail</label>
+            <input type="email" id="login-email">
+
+            <label>Jelszó</label>
+            <input type="password" id="login-password">
+
+            <button class="auth-btn" id="login-btn">Bejelentkezés</button>
+        </div>
+    </main>
+
+    <div class="shipping-banner">
+        <span>🚚 10.000 Ft felett <strong>INGYENES</strong> a szállítás!</span>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h4>Rólunk</h4>
+                <p>Prémium férfiruha webshop, ahol a stílus és a minőség találkozik. Válogatott kollekcióinkkal
+                    segítünk, hogy minden alkalommal a legjobb formádat hozhasd.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Gyors Linkek</h4>
+                <ul>
+                    <li><a href="index.html">Főoldal</a></li>
+                    <li><a href="cart.html">Kosár</a></li>
+                    <li><a href="login.html">Bejelentkezés</a></li>
+                    <li><a href="register.html">Regisztráció</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Ügyfélszolgálat</h4>
+                <ul>
+                    <li><a href="#">Szállítási információk</a></li>
+                    <li><a href="#">Gyakori kérdések</a></li>
+                    <li><a href="#">Visszaküldés</a></li>
+                    <li><a href="#">Adatkezelés</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Kapcsolat</h4>
+                <p>Email: info@webshop.hu</p>
+                <p>Telefon: +36 30 123 4567</p>
+                <p>Cím: 1051 Budapest, Fashion utca 12.</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Ruházati Webshop - Minden jog fenntartva.</p>
+        </div>
+    </footer>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js?v=1.1"></script>
+</body>
+
+</html>

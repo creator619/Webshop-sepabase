@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruházati Webshop</title>
+    <link rel="stylesheet" href="style.css?v=1.1">
+</head>
+
+<body>
+
+    <header class="hero">
+        <div class="hero-text">
+            <h1>Férfi Elegancia</h1>
+            <p>Prémium minőségű ingek, zakók, nadrágok és cipők.</p>
+        </div>
+    </header>
+
+    <div class="search-container">
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Keress termékekre (pl. ing, zakó)...">
+        </div>
+    </div>
+
+    <nav class="menu">
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle">☰</button>
+        <ul id="main-menu">
+            <li data-category="1">Ing</li>
+            <li data-category="2">Zakó</li>
+            <li data-category="3">Nadrág</li>
+            <li data-category="4">Cipő</li>
+            <li onclick="window.location.href='cart.html'" class="cart-menu">
+                Kosár <span id="cart-count">(0)</span>
+            </li>
+            <div id="user-nav" class="user-status">
+                <li onclick="window.location.href='login.html'" id="login-link">Bejelentkezés</li>
+                <li onclick="window.location.href='register.html'" id="register-link">Regisztráció</li>
+            </div>
+        </ul>
+    </nav>
+
+    <main>
+        <h2 class="section-title">Termékek</h2>
+        
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label for="sort-select">Rendezés:</label>
+                <select id="sort-select">
+                    <option value="default">Alapértelmezett</option>
+                    <option value="price-asc">Legolcsóbb elöl</option>
+                    <option value="price-desc">Legdrágább elöl</option>
+                    <option value="name-asc">Név szerint (A-Z)</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="price-filter">Max ár: <span id="price-display">50 000 Ft</span></label>
+                <input type="range" id="price-filter" min="0" max="100000" step="1000" value="100000">
+            </div>
+        </div>
+
+        <div id="product-list" class="products"></div>
+    </main>
+
+    <div class="shipping-banner">
+        <span>🚚 10.000 Ft felett <strong>INGYENES</strong> a szállítás!</span>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h4>Rólunk</h4>
+                <p>Prémium férfiruha webshop, ahol a stílus és a minőség találkozik. Válogatott kollekcióinkkal
+                    segítünk, hogy minden alkalommal a legjobb formádat hozhasd.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Gyors Linkek</h4>
+                <ul>
+                    <li><a href="index.html">Főoldal</a></li>
+                    <li><a href="cart.html">Kosár</a></li>
+                    <li><a href="login.html">Bejelentkezés</a></li>
+                    <li><a href="register.html">Regisztráció</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Ügyfélszolgálat</h4>
+                <ul>
+                    <li><a href="#">Szállítási információk</a></li>
+                    <li><a href="#">Gyakori kérdések</a></li>
+                    <li><a href="#">Visszaküldés</a></li>
+                    <li><a href="#">Adatkezelés</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Kapcsolat</h4>
+                <p>Email: info@webshop.hu</p>
+                <p>Telefon: +36 30 123 4567</p>
+                <p>Cím: 1051 Budapest, Fashion utca 12.</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Ruházati Webshop - Minden jog fenntartva.</p>
+        </div>
+    </footer>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="products_data.js?v=1.1"></script>
+    <script src="script.js?v=1.1"></script>
+</body>
+
+</html>
