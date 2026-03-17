@@ -10,6 +10,7 @@
 
 <body>
 
+    <!-- Hero szekció: az oldal tetején lévő üdvözlő rész nagy képpel vagy címmel -->
     <header class="hero">
         <div class="hero-text">
             <h1>Férfi Elegancia</h1>
@@ -17,6 +18,7 @@
         </div>
     </header>
 
+    <!-- Keresési felület -->
     <div class="search-container">
         <div class="search-wrapper">
             <span class="search-icon">🔍</span>
@@ -24,16 +26,22 @@
         </div>
     </div>
 
+    <!-- Főmenü és navigáció -->
     <nav class="menu">
         <button class="mobile-menu-toggle" id="mobile-menu-toggle">☰</button>
         <ul id="main-menu">
+            <!-- Dinamikus kategóriák (a script.js-ben lévő adatok alapján) -->
             <li data-category="1">Ing</li>
             <li data-category="2">Zakó</li>
             <li data-category="3">Nadrág</li>
             <li data-category="4">Cipő</li>
+            
+            <!-- Kosár ikon a menüben -->
             <li onclick="window.location.href='cart.html'" class="cart-menu">
                 Kosár <span id="cart-count">(0)</span>
             </li>
+            
+            <!-- Bejelentkezés/Regisztráció vagy Profil gombok helye -->
             <div id="user-nav" class="user-status">
                 <li onclick="window.location.href='login.html'" id="login-link">Bejelentkezés</li>
                 <li onclick="window.location.href='register.html'" id="register-link">Regisztráció</li>
@@ -44,7 +52,9 @@
     <main>
         <h2 class="section-title">Termékek</h2>
         
+        <!-- Szűrési és rendezési lehetőségek -->
         <div class="filter-bar">
+            <!-- Rendezés szempontok szerint -->
             <div class="filter-group">
                 <label for="sort-select">Rendezés:</label>
                 <select id="sort-select">
@@ -55,26 +65,32 @@
                 </select>
             </div>
             
+            <!-- Ár szerinti szűrés csúszka -->
             <div class="filter-group">
                 <label for="price-filter">Max ár: <span id="price-display">50 000 Ft</span></label>
                 <input type="range" id="price-filter" min="0" max="100000" step="1000" value="100000">
             </div>
         </div>
 
+        <!-- Terméklista: ide kerülnek be generálva a termékkártyák -->
         <div id="product-list" class="products"></div>
     </main>
 
+    <!-- Szállítási információ banner -->
     <div class="shipping-banner">
         <span>🚚 10.000 Ft felett <strong>INGYENES</strong> a szállítás!</span>
     </div>
 
+    <!-- Weboldal lábléce: információk és linkek -->
     <footer class="site-footer">
         <div class="footer-container">
+            <!-- Rólunk szekció -->
             <div class="footer-section">
                 <h4>Rólunk</h4>
                 <p>Prémium férfiruha webshop, ahol a stílus és a minőség találkozik. Válogatott kollekcióinkkal
                     segítünk, hogy minden alkalommal a legjobb formádat hozhasd.</p>
             </div>
+            <!-- Oldaltérkép / gyorslinkek -->
             <div class="footer-section">
                 <h4>Gyors Linkek</h4>
                 <ul>
@@ -84,6 +100,7 @@
                     <li><a href="register.html">Regisztráció</a></li>
                 </ul>
             </div>
+            <!-- Ügyfélszolgálati információk -->
             <div class="footer-section">
                 <h4>Ügyfélszolgálat</h4>
                 <ul>
@@ -93,6 +110,7 @@
                     <li><a href="#">Adatkezelés</a></li>
                 </ul>
             </div>
+            <!-- Elérhetőségek -->
             <div class="footer-section">
                 <h4>Kapcsolat</h4>
                 <p>Email: info@webshop.hu</p>
@@ -100,17 +118,21 @@
                 <p>Cím: 1051 Budapest, Fashion utca 12.</p>
             </div>
         </div>
+        <!-- Lábléc alja: copyright -->
         <div class="footer-bottom">
             <p>&copy; 2026 Ruházati Webshop - Minden jog fenntartva.</p>
         </div>
     </footer>
 
+    <!-- Felugró értesítések (toast) konténere -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- Supabase Client -->
+    <!-- Külső könyvtár: Supabase kliens -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="products_data.js?v=1.1"></script>
-    <script src="script.js?v=1.1"></script>
+    
+    <!-- Saját scriptek -->
+    <script src="products_data.js?v=1.1"></script> <!-- Termék adatok (ha nem az adatbázisból jönnek) -->
+    <script src="script.js?v=1.1"></script> <!-- Fő alkalmazás logika -->
 </body>
 
 </html>
