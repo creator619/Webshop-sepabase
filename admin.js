@@ -1,38 +1,47 @@
 // --- SUPABASE INICIALIZÁLÁS ---
+// A Supabase adatbázis eléréséhez szükséges URL és anonim kulcs
 var SUPABASE_URL = "https://vktmrcvvujnwnogmqktk.supabase.co";
 var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrdG1yY3Z2dWpud25vZ21xa3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MzA1NTQsImV4cCI6MjA4OTMwNjU1NH0.fFgyD-GfcFGiUwtAti_rUE2U21cwIebQXRczVlYP1-I";
+
+// Supabase kliens létrehozása (ha még nincs inicializálva)
 var supabaseClient = window.supabaseClient || (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
 window.supabaseClient = supabaseClient;
 
-// Maradék admin logika
-const ADMIN_API = "http://localhost:3000"; // Tartalék, hátha kell valamihez, de Supabase-t használunk
+// Tartalék API URL (ha nem csak Supabase-t használnánk)
+const ADMIN_API = "http://localhost:3000"; 
 
+// Az oldal betöltésekor lefutó fő inicializáló rész
 document.addEventListener('DOMContentLoaded', () => {
-    // Jogosultság ellenőrzés (a Supabase profiles tábla alapján)
+    // Jogosultság ellenőrzés: Csak admin felhasználók léphetnek be
     const user = JSON.parse(localStorage.getItem('user'));
     
     if (!user || !user.is_admin) {
         alert('Nincs jogosultságod ehhez az oldalhoz! Kérlek lépj be egy olyan fiókkal, ami admin jogosultsággal rendelkezik.');
-        window.location.href = 'index.html';
+        window.location.href = 'index.html'; // Viszaküldés a főoldalra
         return;
     }
 
-    loadOrders();
-    loadStats();
-    loadCategoriesAdmin();
-    setupTabs();
+    // Adatok betöltése az adatbázisból
+    loadOrders();       // Rendelések
+    loadStats();        // Statisztikák (bevétel, stb.)
+    loadCategoriesAdmin(); // Kategóriák a termékfelvételhez
+    setupTabs();        // Fülek közötti navigáció beállítása
 });
 
+// A fülek (Irányítópult, Rendelések, Termékek) közötti váltás kezelése
 function setupTabs() {
     document.querySelectorAll('.admin-nav .tab').forEach(tab => {
         tab.addEventListener('click', () => {
+            // Aktív osztály eltávolítása minden fülről és tartalom elrejtése
             document.querySelectorAll('.admin-nav .tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
 
+            // Aktuális fül aktiválása
             tab.classList.add('active');
             const target = tab.getAttribute('data-tab');
             document.getElementById(`${target}-tab`).style.display = 'block';
 
+            // Adatok frissítése a fülre kattintáskor
             if (target === 'dashboard') loadStats();
             if (target === 'orders') loadOrders();
             if (target === 'products') {
@@ -42,6 +51,7 @@ function setupTabs() {
     });
 }
 
+// Kategóriák betöltése a Supabase-ből a termék felvételi legördülő menübe
 async function loadCategoriesAdmin() {
     try {
         if (!supabaseClient) return;
@@ -64,21 +74,24 @@ async function loadCategoriesAdmin() {
     }
 }
 
-// --- DASHBOARD ---
+// --- DASHBOARD: Statisztikai adatok számítása ---
 async function loadStats() {
     try {
         if (!supabaseClient) return;
         
+        // Rendelések lekérése a bevétel és vevőszám számításához
         const { data: statsData, error } = await supabaseClient
             .from('orders')
             .select('total_price, user_email');
 
         if (error) throw error;
         
+        // Összesítés
         const totalRevenue = statsData.reduce((sum, o) => sum + (o.total_price || 0), 0);
         const totalOrders = statsData.length;
-        const totalCustomers = new Set(statsData.map(o => o.user_email)).size;
+        const totalCustomers = new Set(statsData.map(o => o.user_email)).size; // Egyedi email címek alapján
         
+        // Megjelenítés az oldalon
         document.getElementById('stat-revenue').textContent = totalRevenue.toLocaleString() + ' Ft';
         document.getElementById('stat-orders').textContent = totalOrders + ' db';
         document.getElementById('stat-customers').textContent = totalCustomers + ' fő';
@@ -87,11 +100,12 @@ async function loadStats() {
     }
 }
 
-// --- RENDELÉSEK ---
+// --- RENDELÉSEK: Rendelések listázása és kezelése ---
 async function loadOrders() {
     try {
         if (!supabaseClient) return;
 
+        // Rendelések és a hozzájuk tartozó tételek lekérése
         const { data: orders, error } = await supabaseClient
             .from('orders')
             .select(`
@@ -107,12 +121,14 @@ async function loadOrders() {
 
         orders.forEach(o => {
             const date = new Date(o.created_at).toLocaleDateString('hu-HU');
+            // Rendelési tételek HTML listája
             const itemsHtml = o.order_items ? o.order_items.map(item => `
                 <div style="font-size: 0.85rem; color: #666; margin-bottom: 2px;">
                     • ${item.product_name} <b>x ${item.quantity}</b> (${item.price.toLocaleString()} Ft)
                 </div>
             `).join('') : 'Nincs adat';
 
+            // Sor hozzáadása a táblázathoz
             tbody.innerHTML += `
                 <tr>
                     <td>#${o.id}</td>
@@ -126,6 +142,7 @@ async function loadOrders() {
                     <td>${date}</td>
                     <td><span class="status-badge status-${o.status}">${o.status}</span></td>
                     <td>
+                        <!-- Státusz módosító legördülő menü -->
                         <select onchange="updateOrderStatus(${o.id}, this.value)">
                             <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Függőben</option>
                             <option value="shipped" ${o.status === 'shipped' ? 'selected' : ''}>Szállítva</option>
@@ -140,6 +157,7 @@ async function loadOrders() {
     }
 }
 
+// Rendelés státuszának frissítése (pl. függőben -> szállítva)
 async function updateOrderStatus(id, newStatus) {
     try {
         if (!supabaseClient) return;
@@ -151,16 +169,16 @@ async function updateOrderStatus(id, newStatus) {
         if (error) throw error;
         
         showToast('Státusz frissítve!');
-        loadOrders();
+        loadOrders(); // Táblázat frissítése
     } catch (err) {
         console.error(err);
         showToast('Hiba a státusz frissítésekor!');
     }
 }
 
-// Duplicate eltávolítva
+// --- TERMÉKEK: Termékek kezelése ---
 
-// --- TERMÉKEK ---
+// Kép feltöltése a Supabase Storage-ba
 async function uploadImage(input) {
     if (!input.files || !input.files[0] || !supabaseClient) return;
 
@@ -170,17 +188,19 @@ async function uploadImage(input) {
     const filePath = `products/${fileName}`;
 
     try {
+        // Feltöltés a 'product-images' bucket-be
         const { data, error } = await supabaseClient.storage
             .from('product-images')
             .upload(filePath, file);
 
         if (error) throw error;
 
-        // Publikus URL lekérése
+        // A feltöltött kép publikus URL-jének lekérése
         const { data: { publicUrl } } = supabaseClient.storage
             .from('product-images')
             .getPublicUrl(filePath);
 
+        // Az URL beírása az űrlap megfelelő mezőjébe
         document.getElementById('p-image').value = publicUrl;
         showToast('Kép sikeresen feltöltve!');
     } catch (err) {
@@ -189,6 +209,7 @@ async function uploadImage(input) {
     }
 }
 
+// Termékek listájának betöltése az admin táblázatba
 async function loadProducts() {
     try {
         if (!supabaseClient) return;
@@ -212,6 +233,7 @@ async function loadProducts() {
                     <td>${p.stock} db</td>
                     <td>${p.category_id}</td>
                     <td>
+                        <!-- Szerkesztés és Törlés gombok -->
                         <button class="action-btn" onclick='editProduct(${JSON.stringify(p)})'>✏️</button>
                         <button class="action-btn" onclick="deleteProduct(${p.id})">🗑️</button>
                     </td>
@@ -223,16 +245,19 @@ async function loadProducts() {
     }
 }
 
+// Termékfelvételi űrlap megjelenítése
 function showProductForm() {
     document.getElementById('product-form').style.display = 'block';
     document.getElementById('form-title').textContent = 'Új termék hozzáadása';
     clearForm();
 }
 
+// Űrlap elrejtése
 function hideProductForm() {
     document.getElementById('product-form').style.display = 'none';
 }
 
+// Űrlap mezőinek kiürítése
 function clearForm() {
     document.getElementById('p-id').value = '';
     document.getElementById('p-name').value = '';
@@ -242,6 +267,7 @@ function clearForm() {
     document.getElementById('p-desc').value = '';
 }
 
+// Meglévő termék adatainak beöltése az űrlapba szerkesztéshez
 function editProduct(p) {
     document.getElementById('product-form').style.display = 'block';
     document.getElementById('form-title').textContent = 'Termék szerkesztése';
@@ -255,6 +281,7 @@ function editProduct(p) {
     document.getElementById('p-desc').value = p.description;
 }
 
+// Termék mentése (ha van ID, frissít, ha nincs, újat szúr be)
 async function saveProduct() {
     if (!supabaseClient) return;
     
@@ -271,8 +298,10 @@ async function saveProduct() {
     try {
         let result;
         if (id) {
+            // Frissítés
             result = await supabaseClient.from('products').update(product).eq('id', id);
         } else {
+            // Új termék beszúrása
             result = await supabaseClient.from('products').insert(product);
         }
 
@@ -280,13 +309,14 @@ async function saveProduct() {
 
         showToast(id ? 'Termék frissítve!' : 'Termék hozzáadva!');
         hideProductForm();
-        loadProducts();
+        loadProducts(); // Lista frissítése
     } catch (err) {
         console.error(err);
         showToast('Hiba a mentés során!');
     }
 }
 
+// Termék törlése
 async function deleteProduct(id) {
     if (!confirm('Biztosan törlöd a terméket?') || !supabaseClient) return;
 
@@ -295,7 +325,7 @@ async function deleteProduct(id) {
         if (error) throw error;
         
         showToast('Termék törölve!');
-        loadProducts();
+        loadProducts(); // Lista frissítése
     } catch (err) {
         console.error(err);
         showToast('Hiba a törlés során!');
