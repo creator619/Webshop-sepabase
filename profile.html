@@ -10,29 +10,35 @@
 
 <body>
 
+    <!-- Navigációs menü -->
     <nav class="menu">
         <button class="mobile-menu-toggle" id="mobile-menu-toggle">☰</button>
         <ul id="main-menu">
             <li onclick="window.location.href='index.html'">Főoldal</li>
+            <!-- Kosár ikon és tartalom számláló -->
             <li onclick="window.location.href='cart.html'" class="cart-menu">
                 Kosár <span id="cart-count">(0)</span>
             </li>
+            <!-- Felhasználói állapot helye (pl. név, kijelentkezés) -->
             <div id="user-nav" class="user-status"></div>
         </ul>
     </nav>
 
+    <!-- Felhasználói profil oldal fő tartalma -->
     <main class="profile-page">
         <h1>Saját Fiók</h1>
 
         <div class="profile-container">
+            <!-- Bal oldali oszlop: Személyes adatok -->
             <div class="profile-details">
                 <h2>Adataim</h2>
+                <!-- Ide kerülnek dinamikusan a felhasználó adatai (név, email, cím) -->
                 <div id="user-details-card" class="details-card">
                     <p>Betöltés...</p>
                 </div>
                 <button id="edit-profile-btn" class="btn-primary" style="margin-top: 15px;">Profil szerkesztése</button>
 
-                <!-- Szerkesztő űrlap (alapértelmezetten rejtett) -->
+                <!-- Profil szerkesztő űrlap (alapértelmezetten rejtett, gombra kattintva jelenik meg) -->
                 <div id="edit-profile-form" class="edit-form" style="display: none; margin-top: 20px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: var(--shadow);">
                     <h3>Adatok módosítása</h3>
                     <div class="form-group">
@@ -48,26 +54,30 @@
                         <textarea id="edit-address" class="form-input" rows="3" placeholder="Irányítószám, Város, Utca..."></textarea>
                     </div>
                     <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <!-- Mentés és Mégse gombok -->
                         <button onclick="saveProfileChanges()" class="btn-primary">Mentés</button>
                         <button onclick="toggleEditForm(false)" class="btn-secondary">Mégse</button>
                     </div>
                 </div>
             </div>
 
+            <!-- Jobb oldali oszlop: Korábbi rendelések -->
             <div class="order-history">
                 <h2>Rendeléseim</h2>
                 <div id="orders-list">
-                    <!-- JS fills this -->
+                    <!-- Ide kerülnek generálva a korábbi vásárlások -->
                     <p>Még nincsenek rendeléseid.</p>
                 </div>
             </div>
         </div>
     </main>
 
+    <!-- Ingyenes szállítás banner -->
     <div class="shipping-banner">
         <span>🚚 10.000 Ft felett <strong>INGYENES</strong> a szállítás!</span>
     </div>
 
+    <!-- Lábléc -->
     <footer class="site-footer">
         <div class="footer-container">
             <div class="footer-section">
@@ -105,6 +115,7 @@
         </div>
     </footer>
 
+    <!-- Értesítések helye -->
     <div id="toast-container" class="toast-container"></div>
 
     <!-- Supabase Client -->
