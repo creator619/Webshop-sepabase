@@ -892,11 +892,19 @@ if (menuList) {
         if (!item || item.classList.contains("cart-menu")) return;
 
         const cat = item.getAttribute("data-category");
-        // Ha van kategória ID, vagy a szöveg alapján indokolt a szűrés
+        const isMainPage = window.location.pathname.endsWith("index.html") || window.location.pathname === "/" || window.location.pathname.endsWith("/");
+
         if (cat !== null || item.innerText.includes("Főoldal")) {
-            document.querySelectorAll(".menu li").forEach(li => li.classList.remove("active"));
-            item.classList.add("active");
-            applyFilters();
+            if (isMainPage) {
+                // Ha a főoldalon vagyunk, csak szűrünk (eredeti működés)
+                document.querySelectorAll(".menu li").forEach(li => li.classList.remove("active"));
+                item.classList.add("active");
+                applyFilters();
+            } else {
+                // Ha más oldalon (pl. kosár), akkor visszaugrunk a főoldalra a paraméterrel
+                const targetCat = cat || ""; // Főoldal esetén üres
+                window.location.href = `index.html${targetCat ? `?category=${targetCat}` : ""}`;
+            }
 
             // Mobil menü bezárása
             menuList.classList.remove("active");
@@ -923,7 +931,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (searchInput) searchInput.addEventListener('input', applyFilters);
 
-    fetchProducts();
+    fetchProducts().then(() => {
+        // Miután betöltődtek a termékek, megnézzük van-e kategória a URL-ben
+        const urlParams = new URLSearchParams(window.location.search);
+        const catParam = urlParams.get('category');
+        if (catParam) {
+            const menuItem = document.querySelector(`.menu li[data-category="${catParam}"]`);
+            if (menuItem) {
+                document.querySelectorAll(".menu li").forEach(li => li.classList.remove("active"));
+                menuItem.classList.add("active");
+                applyFilters();
+            }
+        }
+    });
     fetchCategories();
     updateCartCount();
 });
