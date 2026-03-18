@@ -1,24 +1,28 @@
--- 1. Kategóriák tábla
+-- ==========================================
+-- SUPABASE ADATBÁZIS STRUKTÚRA ÉS BEÁLLÍTÁSOK
+-- ==========================================
+
+-- 1. Kategóriák tábla: Itt tároljuk a termékcsoportokat (pl. Ing, Cipő)
 CREATE TABLE categories (
   id SERIAL PRIMARY KEY,
   name TEXT UNIQUE NOT NULL
 );
 
--- alap kategóriák
+-- Alapértelmezett kategóriák feltöltése
 INSERT INTO categories (name) VALUES ('Ing'), ('Zakó'), ('Nadrág'), ('Cipő');
 
--- 2. Termékek tábla
+-- 2. Termékek tábla: A webshopban elérhető összes termék adatai
 CREATE TABLE products (
   id SERIAL PRIMARY KEY,
-  name TEXT NOT NULL,
-  price INTEGER NOT NULL,
-  image TEXT,
-  category_id INTEGER REFERENCES categories(id),
-  description TEXT,
-  stock INTEGER DEFAULT 10
+  name TEXT NOT NULL,                   -- Termék neve
+  price INTEGER NOT NULL,                -- Ár (egész számként, Ft-ban)
+  image TEXT,                            -- Kép elérési útja vagy URL-je
+  category_id INTEGER REFERENCES categories(id), -- Kapcsolat a kategóriákkal
+  description TEXT,                      -- Részletes leírás
+  stock INTEGER DEFAULT 10               -- Raktárkészlet mennyisége
 );
 
--- alap termékek betöltése
+-- Mintatermékek betöltése a kezdéshez
 INSERT INTO products (name, price, image, category_id, description, stock) VALUES
 ('Fehér elegáns ing', 8990, 'shirt1.jpg', 1, 'Prémium minőségű pamut ing, alkalmi és hétköznapi viseletre is.', 10),
 ('Kék lezser ing', 7990, 'shirt2.jpg', 1, 'Kényelmes viselet, ideális hétvégi programokhoz.', 10),
@@ -33,46 +37,84 @@ INSERT INTO products (name, price, image, category_id, description, stock) VALUE
 ('Fehér sportcipő', 15990, 'shoes2.jpg', 4, 'Trendi és kényelmes, mindennapi rohangáláshoz.', 10),
 ('Futócipő', 18990, 'shoes3.jpg', 4, 'Könnyű szerkezet, kiváló ütéscsillapítás sportoláshoz.', 10);
 
--- 3. Profilok tábla (Az auth.users-hez kapcsolódik)
+-- 3. Profilok tábla: Felhasználói adatok bővítése (név, cím, telefon, admin jogosultság)
+-- Ez a tábla szoros kapcsolatban áll a Supabase beépített auth.users táblájával
 CREATE TABLE profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   name TEXT,
   phone TEXT,
   address TEXT,
-  is_admin BOOLEAN DEFAULT FALSE
+  is_admin BOOLEAN DEFAULT FALSE -- Meghatározza, hogy admin-e a felhasználó
 );
 
--- 4. Rendelések tábla
+-- 4. Rendelések tábla: A leadott vásárlások főbb adatai
 CREATE TABLE orders (
   id SERIAL PRIMARY KEY,
-  user_id UUID REFERENCES auth.users,
-  user_email TEXT,
-  total_price INTEGER NOT NULL,
-  status TEXT DEFAULT 'pending',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
+  user_id UUID REFERENCES auth.users,    -- Ki rendelte
+  user_email TEXT,                       -- Rendelő e-mail címe
+  total_price INTEGER NOT NULL,          -- Fizetendő végösszeg
+  status TEXT DEFAULT 'pending',         -- Rendelés állapota (pl. függőben, teljesítve)
+  shipping_method TEXT,                  -- Választott szállítási mód
+  payment_method TEXT,                   -- Választott fizetési mód
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) -- Időpont
 );
 
--- 5. Rendelt tételek tábla
+-- 5. Rendelt tételek tábla: A rendelésben szereplő konkrét termékek (Order Items)
 CREATE TABLE order_items (
   id SERIAL PRIMARY KEY,
-  order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
-  product_name TEXT NOT NULL,
-  price INTEGER NOT NULL,
-  quantity INTEGER DEFAULT 1
+  order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE, -- Melyik rendeléshez tartozik
+  product_name TEXT NOT NULL,            -- Termék neve (mentve, ha később törölnék a terméket)
+  price INTEGER NOT NULL,                -- Eladási ár a vásárlás pillanatában
+  quantity INTEGER DEFAULT 1             -- Mennyiség
 );
 
--- Row Level Security (RLS) beállítása (egyszerűség kedvéért most engedélyezzük az olvasást mindenkinek)
+-- ==========================================
+-- BIZTONSÁGI BEÁLLÍTÁSOK (RLS - Row Level Security)
+-- ==========================================
+
+-- Kategóriák: Bárki láthatja őket (akár bejelentkezés nélkül is)
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Mindenki olvashatja a kategóriákat" ON categories FOR SELECT USING (true);
 
+-- Termékek: Bárki láthatja őket a webshopban
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Mindenki olvashatja a termékeket" ON products FOR SELECT USING (true);
 
+-- Rendelések:
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+-- A felhasználók csak a saját rendeléseiket láthatják
 CREATE POLICY "Felhasználók láthatják a saját rendeléseiket" ON orders FOR SELECT USING (auth.uid() = user_id);
+-- Az adminok viszont láthatják az összes beérkező rendelést
+CREATE POLICY "Adminok láthatják az összes rendelést" ON orders FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE profiles.id = auth.uid() 
+    AND profiles.is_admin = true
+  )
+);
 
--- 6. Automatikus profil létrehozás trigger
--- Ez a függvény fut le minden alkalommal, amikor egy új felhasználó regisztrál
+-- Rendelt tételek:
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+-- Csak azok láthatják a tételeket, akiké a hozzájuk tartozó rendelés, vagy akik adminok
+CREATE POLICY "Felhasználók és adminok láthatják a tételeket" ON order_items FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM orders 
+    WHERE orders.id = order_items.order_id 
+    AND (orders.user_id = auth.uid() OR EXISTS (
+      SELECT 1 FROM profiles 
+      WHERE profiles.id = auth.uid() 
+      AND profiles.is_admin = true
+    ))
+  )
+);
+
+-- ==========================================
+-- AUTOMATIZÁCIÓK (TRIGGEREK ÉS FÜGGVÉNYEK)
+-- ==========================================
+
+-- Függvény: Új profil létrehozása automatikusan regisztrációkor
+-- Amikor egy felhasználó regisztrál az Auth modulban, ez a függvény 
+-- beírja az adatait a mi 'profiles' táblánkba is.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -82,8 +124,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Beállítjuk a triggert az auth.users táblára (ez a belső Supabase tábla)
--- Fontos: Ezt a Supabase SQL Editorában kell lefuttatni!
+-- Trigger: Azonnali futtatás regisztráció (INSERT a auth.users táblába) után
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
