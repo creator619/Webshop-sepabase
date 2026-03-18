@@ -346,7 +346,31 @@ function renderCart() {
             });
         }
         const totalSpan = document.getElementById("cart-total");
-        if (totalSpan) totalSpan.textContent = total.toLocaleString() + " Ft";
+        if (totalSpan) {
+            totalSpan.textContent = total.toLocaleString() + " Ft";
+            
+            // Ingyenes szállítás info megjelenítése
+            const summaryDiv = document.querySelector(".cart-summary");
+            if (summaryDiv) {
+                let shippingInfo = document.getElementById("cart-shipping-info");
+                if (!shippingInfo) {
+                    shippingInfo = document.createElement("p");
+                    shippingInfo.id = "cart-shipping-info";
+                    shippingInfo.style.fontSize = "0.9rem";
+                    shippingInfo.style.marginTop = "10px";
+                    summaryDiv.insertBefore(shippingInfo, totalSpan.parentElement.nextSibling);
+                }
+                
+                if (total >= 10000) {
+                    shippingInfo.innerHTML = "🎉 <strong>Ingyenes szállítás!</strong>";
+                    shippingInfo.style.color = "var(--accent)";
+                } else {
+                    const diff = 10000 - total;
+                    shippingInfo.innerHTML = `Vásárolj még <strong>${diff.toLocaleString()} Ft</strong> értékben az ingyenes szállításhoz!`;
+                    shippingInfo.style.color = "#666";
+                }
+            }
+        }
     }
 
     const checkoutBtn = document.querySelector(".checkout-btn");
@@ -405,7 +429,47 @@ if (window.location.pathname.includes("checkout.html")) {
                 </div>
             `;
         });
-        document.getElementById("checkout-total").textContent = total.toLocaleString() + " Ft";
+
+        const totalLabel = document.getElementById("checkout-total");
+
+        function updateCheckoutTotal() {
+            const shippingMethod = document.querySelector('input[name="shipping"]:checked')?.value || 'home';
+            let shippingFee = 0;
+
+            if (total < 10000) {
+                shippingFee = (shippingMethod === 'home') ? 1500 : 990;
+            }
+
+            const finalTotal = total + shippingFee;
+            
+            // Frissítjük a kijelzést
+            let shippingDisplay = document.getElementById("shipping-fee-display");
+            if (!shippingDisplay) {
+                shippingDisplay = document.createElement("div");
+                shippingDisplay.id = "shipping-fee-display";
+                shippingDisplay.className = "checkout-item shipping-row";
+                shippingDisplay.style.borderTop = "1px solid #eee";
+                shippingDisplay.style.marginTop = "10px";
+                shippingDisplay.style.paddingTop = "10px";
+                container.appendChild(shippingDisplay);
+            }
+            
+            shippingDisplay.innerHTML = `
+                <span>Szállítási díj:</span>
+                <span>${shippingFee > 0 ? shippingFee.toLocaleString() + " Ft" : "Ingyenes"}</span>
+            `;
+
+            totalLabel.textContent = finalTotal.toLocaleString() + " Ft";
+            return finalTotal;
+        }
+
+        // Kezdeti számítás
+        updateCheckoutTotal();
+
+        // Eseménykezelők a szállítási mód váltáshoz
+        document.querySelectorAll('input[name="shipping"]').forEach(input => {
+            input.addEventListener('change', updateCheckoutTotal);
+        });
     }
 
     const user = JSON.parse(localStorage.getItem("user"));
@@ -440,12 +504,17 @@ if (window.location.pathname.includes("checkout.html")) {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 const userId = session?.user?.id || null;
 
+                // A végleges árat az updateCheckoutTotal-tól kérjük el újra
+                const checkoutTotal = parseInt(document.getElementById("checkout-total").textContent.replace(/\D/g, ''));
+
                 // 2. Rendelés beszúrása
                 const { data: order, error: orderError } = await supabaseClient.from('orders').insert({
                     user_email: email,
                     user_id: userId,
-                    total_price: total,
-                    status: 'pending'
+                    total_price: checkoutTotal,
+                    status: 'pending',
+                    shipping_method: shippingMethod, // Hozzáadjuk a szállítási módot is ha van ilyen oszlop
+                    payment_method: paymentMethod
                 }).select().single();
 
                 if (orderError) throw orderError;
