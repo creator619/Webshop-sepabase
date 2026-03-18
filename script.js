@@ -1,6 +1,11 @@
-// --- SEGÉDFÜGGVÉNYEK ---
+// ==========================================
+// SEGÉDFÜGGVÉNYEK ÉS UI KEZELÉS
+// ==========================================
 
-// Toast értesítés megjelenítése
+/**
+ * Toast értesítés megjelenítése a felhasználónak.
+ * A képernyő jobb alsó sarkában úszik be, majd 3 másodperc után eltűnik.
+ */
 function showToast(message) {
     const container = document.getElementById("toast-container");
     if (!container) return;
@@ -11,7 +16,7 @@ function showToast(message) {
 
     container.appendChild(toast);
 
-    // Eltüntetés 3 másodperc után
+    // Animált eltüntetés időzítése
     setTimeout(() => {
         toast.classList.add("hide");
         setTimeout(() => {
@@ -20,12 +25,16 @@ function showToast(message) {
     }, 3000);
 }
 
-// Felhasználói állapot ellenőrzése és menü frissítése
+/**
+ * Ellenőrzi a bejelentkezési állapotot a LocalStorage-ból,
+ * és frissíti a fejlécben található navigációs gombokat (Login helyett Profil/Admin).
+ */
 function updateAuthUI() {
     const user = JSON.parse(localStorage.getItem("user"));
     const userNav = document.getElementById("user-nav");
 
     if (user && userNav) {
+        // Ha admin a felhasználó, megjelenítjük a fogaskerék ikont az admin felülethez
         const adminLink = user.is_admin ? `<span class="username" onclick="window.location.href='admin.html'" style="color: var(--accent); margin-right: 15px;">⚙️ Admin</span>` : '';
         userNav.innerHTML = `
             <li class="user-info">
@@ -37,6 +46,9 @@ function updateAuthUI() {
     }
 }
 
+/**
+ * Kijelentkezés: törli a felhasználói adatokat és visszairányít a főoldalra.
+ */
 function logout() {
     localStorage.removeItem("user");
     showToast("Sikeres kijelentkezés!");
@@ -45,11 +57,11 @@ function logout() {
     }, 1000);
 }
 
-// Funkciók inicializálása
+// Alapvető UI események (pl. mobil menü) kezelése betöltéskor
 document.addEventListener("DOMContentLoaded", () => {
     updateAuthUI();
 
-    // Mobil menü kapcsoló
+    // Mobil menü nyitás/zárás kezelése
     const toggleBtn = document.getElementById("mobile-menu-toggle");
     const menu = document.getElementById("main-menu");
     if (toggleBtn && menu) {
@@ -60,13 +72,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// --- SUPABASE INICIALIZÁLÁS ---
+// ==========================================
+// SUPABASE INICIALIZÁLÁS
+// ==========================================
+
+// Figyelem: A kulcsok és URL-ek a Supabase projektünkhöz tartoznak.
 var SUPABASE_URL = "https://vktmrcvvujnwnogmqktk.supabase.co";
 var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrdG1yY3Z2dWpud25vZ21xa3RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MzA1NTQsImV4cCI6MjA4OTMwNjU1NH0.fFgyD-GfcFGiUwtAti_rUE2U21cwIebQXRczVlYP1-I";
+// Létrehozzuk a klienst, ami a kommunikációt végzi az adatbázissal.
 var supabaseClient = window.supabaseClient || (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
 window.supabaseClient = supabaseClient;
 
-// Segédfüggvény a termékek megjelenítéséhez
+// ==========================================
+// TERMÉKEK MEGJELENÍTÉSE ÉS LEKÉRÉSE
+// ==========================================
+
+/**
+ * A kapott terméklistát HTML kártyákká alakítja és beszúrja a megadott konténerbe.
+ */
 function renderProducts(list, containerId = "product-list") {
     const container = document.getElementById(containerId) || document.getElementById("wishlist-list") || document.getElementById("related-list");
     if (!container) return;
@@ -84,11 +107,10 @@ function renderProducts(list, containerId = "product-list") {
         const isHearted = wishlist.includes(p.id) ? 'active' : '';
         const heartIcon = isHearted ? '❤️' : '🤍';
         
-        // Kép útvonal kezelése: Ha tartalmazza a Supabase URL-t vagy sima URL, akkor hagyjuk, 
-        // ha pedig régi helyi fájl, akkor alapértelmezett.
         const imgSrc = p.image;
-
         const currentStock = (p.stock === null || p.stock === undefined) ? 10 : p.stock;
+        
+        // Készlet állapot szövegezése
         const stockStatus = currentStock > 0 ? `<p class="stock-info">Készleten: ${currentStock} db</p>` : `<p class="stock-info out-of-stock">Elfogyott</p>`;
         const disableClass = currentStock > 0 ? '' : 'disabled';
 
@@ -104,7 +126,9 @@ function renderProducts(list, containerId = "product-list") {
     });
 }
 
-// Termékek lekérése Supabase-ről
+/**
+ * Termékek lekérése a Supabase-ről.
+ */
 async function fetchProducts() {
     try {
         if (!supabaseClient) throw new Error("Supabase nincs betöltve");
@@ -115,7 +139,7 @@ async function fetchProducts() {
 
         if (error) throw error;
         
-        // Összefésüljük a backend adatokat a frontend méret adatokkal
+        // Statikus kiegészítések (pl. választható méretek) hozzáfűzése a backend adatokhoz
         const mergedData = data.map(p => {
             const staticInfo = (typeof productsData !== 'undefined') ? productsData.find(sp => sp.id === p.id) : null;
             return { ...p, sizes: staticInfo ? staticInfo.sizes : [] };
@@ -125,6 +149,7 @@ async function fetchProducts() {
         renderProducts(mergedData);
     } catch (error) {
         console.warn("Hiba a termékek letöltésekor, statikus adatok használata:", error);
+        // Tartalék megoldás: ha a szerver nem érhető el, a products_data.js-ből dolgozunk
         if (typeof productsData !== 'undefined') {
             window.allProducts = productsData;
             renderProducts(productsData);
@@ -134,10 +159,15 @@ async function fetchProducts() {
     }
 }
 
+// Kezdő lekérés indítása, ha van terméklista az oldalon
 if (document.getElementById("product-list")) {
     fetchProducts();
 }
 
+/**
+ * Egy konkrét termék részletes oldalának megnyitása.
+ * Eltárolja a terméket a LocalStorage-ba, majd átirányít.
+ */
 function openProduct(id) {
     if (!supabaseClient) {
         const product = window.allProducts?.find(p => p.id === id);
@@ -148,7 +178,7 @@ function openProduct(id) {
         return;
     }
 
-    // A termék adatit Supabase-ről kérjük le
+    // Friss adatok lekérése a szerverről a kiválasztott termékről
     supabaseClient
         .from('products')
         .select('*')
@@ -165,6 +195,7 @@ function openProduct(id) {
         })
         .catch(err => {
             console.error(err);
+            // Hiba esetén megpróbáljuk a már korábban betöltött listából kikeresni
             const product = window.allProducts?.find(p => p.id === id);
             if (product) {
                 localStorage.setItem("selectedProduct", JSON.stringify(product));
@@ -173,12 +204,12 @@ function openProduct(id) {
         });
 }
 
-// --- TERMÉK OLDAL ÉS HASONLÓ TERMÉKEK ---
+// ==========================================
+// TERMÉK RÉSZLETEK ÉS HASONLÓ TERMÉKEK
+// ==========================================
+
 if (window.location.pathname.includes("product.html")) {
     let product = JSON.parse(localStorage.getItem("selectedProduct"));
-
-    // FIGYELEM: Itt korábban egy 'productsData' alapú frissítés volt, ami felülírta a backend adatokat.
-    // Mivel a backend a hiteles forrás a készletre (stock), így ezt a részt eltávolítottuk/javítottuk.
 
     if (product) {
         const imgSrc = product.image.startsWith('uploads/') ? `${API_URL}/${product.image}` : product.image;
@@ -190,6 +221,7 @@ if (window.location.pathname.includes("product.html")) {
         const stockDetail = document.getElementById("product-stock-detail");
         const addToCartBtn = document.querySelector(".add-to-cart");
 
+        // Készletinformáció kezelése
         if (stockDetail) {
             if (product.stock !== undefined && product.stock > 0) {
                 stockDetail.textContent = `Készleten: ${product.stock} db`;
@@ -210,6 +242,7 @@ if (window.location.pathname.includes("product.html")) {
             }
         }
 
+        // Méretválasztó gombok generálása
         const sizeContainer = document.getElementById("size-options");
         if (sizeContainer && product.sizes) {
             sizeContainer.innerHTML = "";
@@ -220,30 +253,38 @@ if (window.location.pathname.includes("product.html")) {
                 btn.onclick = () => {
                     document.querySelectorAll(".size-btn").forEach(b => b.classList.remove("active"));
                     btn.classList.add("active");
-                    window.selectedSize = size;
+                    window.selectedSize = size; // Kiválasztott méret tárolása az ablak szintjén
                 };
                 sizeContainer.appendChild(btn);
             });
         }
 
-        // Hasonló termékek betöltése
+        // Kapcsolódó termékek (ugyanabból a kategóriából) megjelenítése
         renderRelatedProducts(product);
     }
 }
 
+/**
+ * Ugyanolyan kategóriájú termékek keresése és megjelenítése.
+ */
 function renderRelatedProducts(currentProduct) {
     const container = document.getElementById("related-list");
     if (!container || !window.allProducts) return;
 
-    // Ugyanaz a kategória, de nem az aktuális termék
     const related = window.allProducts
         .filter(p => p.category_id === currentProduct.category_id && p.id !== currentProduct.id)
-        .slice(0, 4); // Max 4 termék
+        .slice(0, 4);
 
     renderProducts(related, "related-list");
 }
 
-// --- KOSÁR KEZELÉS ---
+// ==========================================
+// KOSÁR KEZELÉSE
+// ==========================================
+
+/**
+ * Frissíti a menüben a kosár melletti számot (tételek összesítése).
+ */
 function updateCartCount() {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
     const count = cart.reduce((total, item) => total + (item.quantity || 1), 0);
@@ -255,6 +296,9 @@ function updateCartCount() {
 
 updateCartCount();
 
+/**
+ * Termék hozzáadása a kosárhoz.
+ */
 function addToCart(product, quantity = 1) {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
@@ -264,7 +308,7 @@ function addToCart(product, quantity = 1) {
         return;
     }
 
-    // Ellenőrizzük, hogy benne van-e már ez a termék ezzel a mérettel
+    // Ha ugyanaz a termék ugyanabban a méretben már benne van, csak a mennyiséget növeljük
     const existingItem = cart.find(item => item.id === product.id && item.size === product.size);
 
     if (existingItem) {
@@ -284,6 +328,7 @@ function addToCart(product, quantity = 1) {
     updateCartCount();
 }
 
+// Kosárba rakás eseménykezelő a termék oldalon
 if (window.location.pathname.includes("product.html")) {
     const addToCartBtn = document.querySelector(".add-to-cart");
     if (addToCartBtn) {
@@ -345,6 +390,8 @@ function renderCart() {
                 `;
             });
         }
+
+        // Végösszeg és ingyenes szállítás kalkuláció
         const totalSpan = document.getElementById("cart-total");
         if (totalSpan) {
             totalSpan.textContent = total.toLocaleString() + " Ft";
@@ -385,12 +432,13 @@ function renderCart() {
     }
 }
 
+// Mennyiség módosítása a kosárban
 function changeQuantity(index, delta) {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
     if (cart[index]) {
         cart[index].quantity = (cart[index].quantity || 1) + delta;
         if (cart[index].quantity < 1) {
-            removeItem(index);
+            removeItem(index); // Ha 0 lenne a darabszám, töröljük
             return;
         }
         localStorage.setItem("cart", JSON.stringify(cart));
@@ -399,6 +447,7 @@ function changeQuantity(index, delta) {
     }
 }
 
+// Termék törlése a kosárból
 function removeItem(index) {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
     cart.splice(index, 1);
@@ -411,12 +460,16 @@ function removeItem(index) {
     updateCartCount();
 }
 
-// --- CHECKOUT ---
+// ==========================================
+// PÉNZTÁR ÉS RENDELÉS LEADÁSA
+// ==========================================
+
 if (window.location.pathname.includes("checkout.html")) {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
     const container = document.getElementById("checkout-items");
     let total = 0;
 
+    // Összegző feltöltése termékekkel
     if (container) {
         container.innerHTML = "";
         cart.forEach(item => {
@@ -432,17 +485,21 @@ if (window.location.pathname.includes("checkout.html")) {
 
         const totalLabel = document.getElementById("checkout-total");
 
+        /**
+         * Kiszámolja a végösszeget a szállítási díjjal együtt.
+         */
         function updateCheckoutTotal() {
             const shippingMethod = document.querySelector('input[name="shipping"]:checked')?.value || 'home';
             let shippingFee = 0;
 
+            // 10.000 Ft alatt szállítási díjat számítunk fel
             if (total < 10000) {
                 shippingFee = (shippingMethod === 'home') ? 1500 : 990;
             }
 
             const finalTotal = total + shippingFee;
             
-            // Frissítjük a kijelzést
+            // Szállítási díj sor megjelenítése/frissítése
             let shippingDisplay = document.getElementById("shipping-fee-display");
             if (!shippingDisplay) {
                 shippingDisplay = document.createElement("div");
@@ -463,21 +520,22 @@ if (window.location.pathname.includes("checkout.html")) {
             return finalTotal;
         }
 
-        // Kezdeti számítás
         updateCheckoutTotal();
 
-        // Eseménykezelők a szállítási mód váltáshoz
+        // Szállítási mód váltásakor újraszámoljuk az árat
         document.querySelectorAll('input[name="shipping"]').forEach(input => {
             input.addEventListener('change', updateCheckoutTotal);
         });
     }
 
+    // Alapadatok kitöltése, ha a felhasználó be van jelentkezve
     const user = JSON.parse(localStorage.getItem("user"));
     if (user) {
         if (document.getElementById("name")) document.getElementById("name").value = user.name;
         if (document.getElementById("email")) document.getElementById("email").value = user.email;
     }
 
+    // Rendelés leadása gomb
     const orderBtn = document.querySelector(".place-order-btn");
     if (orderBtn) {
         orderBtn.addEventListener("click", async () => {
@@ -507,19 +565,19 @@ if (window.location.pathname.includes("checkout.html")) {
                 // A végleges árat az updateCheckoutTotal-tól kérjük el újra
                 const checkoutTotal = parseInt(document.getElementById("checkout-total").textContent.replace(/\D/g, ''));
 
-                // 2. Rendelés beszúrása
+                // 1. Rendelés beszúrása az 'orders' táblába
                 const { data: order, error: orderError } = await supabaseClient.from('orders').insert({
                     user_email: email,
                     user_id: userId,
                     total_price: checkoutTotal,
                     status: 'pending',
-                    shipping_method: shippingMethod, // Hozzáadjuk a szállítási módot is ha van ilyen oszlop
+                    shipping_method: shippingMethod,
                     payment_method: paymentMethod
                 }).select().single();
 
                 if (orderError) throw orderError;
 
-                // 3. Tételek beszúrása
+                // 2. Tételek beszúrása az 'order_items' táblába
                 const orderItems = cart.map(item => ({
                     order_id: order.id,
                     product_name: item.name,
@@ -530,7 +588,7 @@ if (window.location.pathname.includes("checkout.html")) {
                 const { error: itemsError } = await supabaseClient.from('order_items').insert(orderItems);
                 if (itemsError) throw itemsError;
 
-                // 4. Készlet levonása RPC-vel (biztonságosabb és atomi)
+                // 3. Készlet levonása a szerver oldalon (meglévő SQL függvényt hívunk)
                 const updatePromises = cart.map(item => {
                     return supabaseClient.rpc('increment_stock', { 
                         product_id: item.id, 
@@ -541,7 +599,7 @@ if (window.location.pathname.includes("checkout.html")) {
                 await Promise.all(updatePromises);
 
                 showToast("Rendelés sikeresen leadva!");
-                localStorage.removeItem("cart");
+                localStorage.removeItem("cart"); // Kosár ürítése
                 setTimeout(() => {
                     window.location.href = "index.html";
                 }, 1500);
@@ -553,7 +611,11 @@ if (window.location.pathname.includes("checkout.html")) {
     }
 }
 
-// --- AUTH ---
+// ==========================================
+// HITELLESÍTÉS (REGISZTRÁCIÓ ÉS BEJELENTKEZÉS)
+// ==========================================
+
+// Regisztráció logikája
 if (window.location.pathname.includes("register.html")) {
     const regBtn = document.getElementById("register-btn");
     if (regBtn) {
@@ -574,7 +636,7 @@ if (window.location.pathname.includes("register.html")) {
                     email,
                     password,
                     options: {
-                        data: { full_name: name }
+                        data: { full_name: name } // Metaadatként átadjuk a nevet is
                     }
                 });
 
@@ -591,6 +653,7 @@ if (window.location.pathname.includes("register.html")) {
     }
 }
 
+// Bejelentkezés logikája
 if (window.location.pathname.includes("login.html")) {
     const loginBtn = document.getElementById("login-btn");
     if (loginBtn) {
@@ -608,7 +671,7 @@ if (window.location.pathname.includes("login.html")) {
 
                 if (error) throw error;
 
-                // Lekérjük a profil adatokat is, hogy tudjuk admin-e
+                // Bejelentkezés után lekérjük a kiegészítő profil adatokat (pl. név, admin-e)
                 const { data: profile } = await supabaseClient
                     .from('profiles')
                     .select('*')
@@ -622,11 +685,13 @@ if (window.location.pathname.includes("login.html")) {
                     is_admin: profile?.is_admin || false
                 };
 
+                // Adatok tárolása a munkamenethez
                 localStorage.setItem("user", JSON.stringify(userData));
                 localStorage.setItem("token", data.session?.access_token);
                 
                 showToast("Sikeres bejelentkezés!");
                 setTimeout(() => {
+                    // Adminokat az admin panelre irányítjuk
                     window.location.href = userData.is_admin ? "admin.html" : "index.html";
                 }, 1000);
             } catch (error) {
@@ -636,7 +701,10 @@ if (window.location.pathname.includes("login.html")) {
     }
 }
 
-// --- PROFIL ÉS RENDELÉSEK ---
+// ==========================================
+// PROFIL ADATOK ÉS RENDELÉSI ELŐZMÉNYEK
+// ==========================================
+
 if (window.location.pathname.includes('profile.html')) {
     const user = JSON.parse(localStorage.getItem('user'));
 
@@ -646,6 +714,7 @@ if (window.location.pathname.includes('profile.html')) {
             window.location.href = 'login.html';
         }, 1500);
     } else {
+        // UI feltöltése a tárolt profil adatokkal
         const detailsCard = document.getElementById('user-details-card');
         if (detailsCard) {
             detailsCard.innerHTML = `
@@ -737,6 +806,9 @@ if (window.location.pathname.includes('profile.html')) {
     }
 }
 
+/**
+ * Profil szerkesztése űrlap ki/be kapcsolása.
+ */
 function toggleEditForm(show) {
     const form = document.getElementById('edit-profile-form');
     const user = JSON.parse(localStorage.getItem('user'));
@@ -752,6 +824,9 @@ function toggleEditForm(show) {
     }
 }
 
+/**
+ * Módosított profiladatok mentése a Supabase 'profiles' táblába.
+ */
 async function saveProfileChanges() {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user || !supabaseClient) return;
@@ -770,12 +845,13 @@ async function saveProfileChanges() {
     try {
         const { data, error } = await supabaseClient
             .from('profiles')
-            .upsert({ id: user.id, ...updatedData })
+            .upsert({ id: user.id, ...updatedData }) // Módosítás vagy beszúrás, ha nem létezik
             .select()
             .single();
 
         if (error) throw error;
 
+        // LocalStorage frissítése is
         localStorage.setItem('user', JSON.stringify({ ...user, ...data }));
         showToast("Profil sikeresen frissítve!");
         toggleEditForm(false);
@@ -785,9 +861,15 @@ async function saveProfileChanges() {
     }
 }
 
-// --- KÍVÁNSÁGLISTA ---
+// ==========================================
+// KÍVÁNSÁGLISTA (WISHLIST)
+// ==========================================
+
+/**
+ * Termék hozzáadása vagy eltávolítása a kedvencek közül.
+ */
 function toggleWishlist(event, productId) {
-    event.stopPropagation();
+    event.stopPropagation(); // Ne nyissa meg a termék oldalt kattintáskor
     let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
     const index = wishlist.indexOf(productId);
 
@@ -801,13 +883,18 @@ function toggleWishlist(event, productId) {
 
     localStorage.setItem('wishlist', JSON.stringify(wishlist));
 
+    // Ha a kívánságlista oldalon vagyunk, azonnal újrarajzoljuk a listát
     if (window.location.pathname.includes('wishlist.html')) {
         renderWishlist();
     } else {
+        // Különben csak frissítjük az ikonokat
         applyFilters();
     }
 }
 
+/**
+ * A kedvencnek jelölt termékek kilistázása a wishlist.html-en.
+ */
 function renderWishlist() {
     if (typeof window.allProducts === 'undefined') return;
     let wishlistIds = JSON.parse(localStorage.getItem('wishlist')) || [];
@@ -819,8 +906,13 @@ if (window.location.pathname.includes('wishlist.html')) {
     document.addEventListener('DOMContentLoaded', renderWishlist);
 }
 
-// Kategóriák lekérése a backendről és dinamikus megjelenítése
-// Kategóriák lekérése Supabase-ről
+// ==========================================
+// KATEGÓRIA KEZELÉS ÉS MENÜ
+// ==========================================
+
+/**
+ * Kategóriák lekérése a backendről.
+ */
 async function fetchCategories() {
     try {
         if (!supabase) throw new Error("Supabase nincs betöltve");
@@ -830,7 +922,6 @@ async function fetchCategories() {
             .select('*');
 
         if (error) throw error;
-        
         renderMenu(data);
         console.log("Kategóriák sikeresen betöltve Supabase-ről.");
     } catch (error) {
@@ -842,26 +933,34 @@ async function fetchCategories() {
     }
 }
 
+/**
+ * Dinamikus menü generálása a kategóriák alapján.
+ */
 function renderMenu(categories) {
     const menu = document.getElementById("main-menu");
     if (!menu) return;
 
-    // Eltávolítjuk a régi statikus kategória elemeket
+    // Régi elemek takarítása
     const existingItems = menu.querySelectorAll("li[data-category]");
     existingItems.forEach(item => item.remove());
 
-    // Új kategóriák beszúrása a menü elejére
+    // Új elemek beszúrása
     categories.slice().reverse().forEach(cat => {
         const li = document.createElement("li");
         li.setAttribute("data-category", cat.id);
         li.textContent = cat.name;
-        menu.prepend(li);
+        menu.prepend(li); // A lista elejére fűzzük
     });
 }
 
-// --- SZŰRÉS ÉS RENDEZÉS LOGIKA ---
+// ==========================================
+// SZŰRÉS, KERESÉS ÉS RENDEZÉS
+// ==========================================
+
+/**
+ * A termékek szűrése keresőszó, kategória és ár alapján, majd rendezésük.
+ */
 function applyFilters() {
-    // Elsősorban a window.allProducts-ra támaszkodunk (ami már összefésült)
     const source = window.allProducts || (typeof productsData !== 'undefined' ? productsData : []);
     if (!source || source.length === 0) return;
 
@@ -877,6 +976,7 @@ function applyFilters() {
         return matchesSearch && matchesCategory && matchesPrice;
     });
 
+    // Rendezési feltételek alkalmazása
     if (sortBy === 'price-asc') filtered.sort((a, b) => a.price - b.price);
     else if (sortBy === 'price-desc') filtered.sort((a, b) => b.price - a.price);
     else if (sortBy === 'name-asc') filtered.sort((a, b) => a.name.localeCompare(b.name));
@@ -884,7 +984,7 @@ function applyFilters() {
     renderProducts(filtered);
 }
 
-// Kategória szűrés eseménykezelő (Delegált megoldás a dinamikus elemekhez)
+// Menü kattintások (kategória váltás) kezelése
 const menuList = document.getElementById("main-menu");
 if (menuList) {
     menuList.addEventListener("click", (e) => {
@@ -896,17 +996,17 @@ if (menuList) {
 
         if (cat !== null || item.innerText.includes("Főoldal")) {
             if (isMainPage) {
-                // Ha a főoldalon vagyunk, csak szűrünk (eredeti működés)
+                // Ha a főoldalon vagyunk, aktiváljuk a szűrőt
                 document.querySelectorAll(".menu li").forEach(li => li.classList.remove("active"));
                 item.classList.add("active");
                 applyFilters();
             } else {
-                // Ha más oldalon (pl. kosár), akkor visszaugrunk a főoldalra a paraméterrel
-                const targetCat = cat || ""; // Főoldal esetén üres
+                // Ha más oldalon vagyunk, visszairányítjuk a főoldalra a kategória paraméterrel
+                const targetCat = cat || ""; 
                 window.location.href = `index.html${targetCat ? `?category=${targetCat}` : ""}`;
             }
 
-            // Mobil menü bezárása
+            // Mobil menü automatikus bezárása kattintás után
             menuList.classList.remove("active");
             const toggleBtn = document.getElementById("mobile-menu-toggle");
             if (toggleBtn) toggleBtn.textContent = "☰";
@@ -914,13 +1014,14 @@ if (menuList) {
     });
 }
 
-// Szűrés eseménykezelők inicializálása
+// Inicializálás betöltéskor
 document.addEventListener('DOMContentLoaded', () => {
     const sortSelect = document.getElementById('sort-select');
     const priceFilter = document.getElementById('price-filter');
     const priceDisplay = document.getElementById('price-display');
     const searchInput = document.getElementById('search-input');
 
+    // Eseménykezelők a szűrőkhöz
     if (sortSelect) sortSelect.addEventListener('change', applyFilters);
     if (priceFilter) {
         priceFilter.addEventListener('input', (e) => {
@@ -931,8 +1032,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (searchInput) searchInput.addEventListener('input', applyFilters);
 
+    // Kezdő adatok betöltése
     fetchProducts().then(() => {
-        // Miután betöltődtek a termékek, megnézzük van-e kategória a URL-ben
+        // Ellenőrizzük, hogy kategória szűréssel érkeztünk-e az oldalra
         const urlParams = new URLSearchParams(window.location.search);
         const catParam = urlParams.get('category');
         if (catParam) {
