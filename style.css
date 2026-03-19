@@ -549,6 +549,20 @@ h1, h2, h3 {
 }
 
 /* --- Checkout (Pénztár) oldal --- */
+.checkout-page {
+    padding: 60px 5%;
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: 60vh;
+}
+
+.checkout-page > h1 {
+    text-align: center;
+    margin-bottom: 40px;
+    font-size: 2.5rem;
+    color: var(--primary);
+}
+
 .checkout-container {
     display: grid;
     grid-template-columns: 1.5fr 1fr;
@@ -559,6 +573,70 @@ h1, h2, h3 {
     background: white;
     padding: 40px;
     border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.checkout-form label {
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--primary);
+    display: block;
+}
+
+.checkout-form input[type="text"],
+.checkout-form input[type="email"],
+.checkout-form input[type="tel"],
+.checkout-form input[type="password"] {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: var(--transition);
+}
+
+.checkout-form input[type="text"]:focus,
+.checkout-form input[type="email"]:focus,
+.checkout-form input[type="tel"]:focus,
+.checkout-form input[type="password"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+}
+
+.checkout-section {
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
+
+.checkout-section h3 {
+    font-size: 1.25rem;
+    color: var(--primary);
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+}
+
+.place-order-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    transition: var(--transition);
+    margin-top: 30px;
+}
+
+.place-order-btn:hover {
+    background: var(--accent);
+    transform: translateY(-2px);
     box-shadow: var(--shadow);
 }
 
