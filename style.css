@@ -150,6 +150,96 @@ h1, h2, h3 {
     margin: 15px auto 0;
 }
 
+/* --- Szűrő és Rendezés sáv --- */
+.filter-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 20px 30px;
+    margin: 0 auto 40px;
+    max-width: calc(1400px - 10%);
+    width: 90%;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.filter-group label {
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0;
+}
+
+#sort-select {
+    padding: 10px 15px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: inherit;
+    color: var(--text-dark);
+    background-color: var(--bg-light);
+    cursor: pointer;
+    transition: var(--transition);
+    outline: none;
+}
+
+#sort-select:focus, #sort-select:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+}
+
+#price-filter {
+    -webkit-appearance: none;
+    width: 200px;
+    height: 6px;
+    background: #e0e0e0;
+    border-radius: 5px;
+    outline: none;
+}
+
+#price-filter::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+#price-filter::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
+
+#price-display {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .filter-bar {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .filter-group {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    #price-filter {
+        width: 150px;
+    }
+}
+
 /* --- Terméklista rács (Grid layout) --- */
 .products {
     display: grid;
