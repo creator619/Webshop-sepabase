@@ -109,7 +109,7 @@ async function loadOrders() {
         const { data: orders, error } = await supabaseClient
             .from('orders')
             .select(`
-                id, user_email, total_price, status, created_at,
+                id, user_email, total_price, status, created_at, shipping_method, payment_method,
                 order_items (product_name, price, quantity)
             `)
             .order('created_at', { ascending: false });
@@ -129,6 +129,9 @@ async function loadOrders() {
             `).join('') : 'Nincs adat';
 
             // Sor hozzáadása a táblázathoz
+            const shippingText = o.shipping_method === 'home' ? 'Házhoz' : (o.shipping_method === 'locker' ? 'Automata' : o.shipping_method || '-');
+            const paymentText = o.payment_method === 'cod' ? 'Utánvét' : (o.payment_method === 'transfer' ? 'Átutalás' : o.payment_method || '-');
+
             tbody.innerHTML += `
                 <tr>
                     <td>#${o.id}</td>
@@ -139,6 +142,10 @@ async function loadOrders() {
                         </div>
                     </td>
                     <td>${o.total_price.toLocaleString()} Ft</td>
+                    <td>
+                        <div style="font-size: 0.85rem;">${shippingText}</div>
+                        <div style="font-size: 0.75rem; color: #777;">${paymentText}</div>
+                    </td>
                     <td>${date}</td>
                     <td><span class="status-badge status-${o.status}">${o.status}</span></td>
                     <td>
@@ -263,8 +270,42 @@ function clearForm() {
     document.getElementById('p-name').value = '';
     document.getElementById('p-price').value = '';
     document.getElementById('p-image').value = '';
-    document.getElementById('p-stock').value = '';
+    document.getElementById('p-category').value = '';
+    document.getElementById('admin-size-inputs').innerHTML = '<span style="color: #666; font-size: 0.9rem;">Kérlek válassz először kategóriát!</span>';
     document.getElementById('p-desc').value = '';
+}
+
+// Dinamikus méretmező generátor a kategória alapján
+function generateAdminSizeInputs(productId = null) {
+    const category = document.getElementById('p-category').value;
+    const container = document.getElementById('admin-size-inputs');
+    
+    if (!category) {
+        container.innerHTML = '<span style="color: #666; font-size: 0.9rem;">Kérlek válassz először kategóriát!</span>';
+        return;
+    }
+    
+    // Kategóriától függő méretlista
+    let sizes = category == '4' ? ["40", "41", "42", "43", "44", "45"] : ["S", "M", "L", "XL", "XXL"];
+    
+    // Meglévő adatok kinyerése, ha szerkesztünk
+    let customStocks = {};
+    if (productId) {
+        const stockMap = JSON.parse(localStorage.getItem('customStockMap') || '{}');
+        if (stockMap[productId]) customStocks = stockMap[productId];
+    }
+    
+    container.innerHTML = '';
+    sizes.forEach(size => {
+        // Alapértelmezett érték: ha új termék, 10-et teszünk bele osztva, hogy legyen benne valami (demo miatt), ha meglévő, akkor 0, de ha customStocks létezik, azt használjuk
+        let defaultVal = customStocks[size] !== undefined ? customStocks[size] : (productId ? 0 : 2);
+        container.innerHTML += `
+            <div style="display: flex; flex-direction: column; width: 60px;">
+                <label style="font-size: 0.85rem; text-align: center; margin-bottom: 3px;">${size}</label>
+                <input type="number" class="size-stock-input" data-size="${size}" value="${defaultVal}" min="0" style="padding: 5px; text-align: center; margin-bottom: 0;">
+            </div>
+        `;
+    });
 }
 
 // Meglévő termék adatainak beöltése az űrlapba szerkesztéshez
@@ -276,8 +317,11 @@ function editProduct(p) {
     document.getElementById('p-name').value = p.name;
     document.getElementById('p-price').value = p.price;
     document.getElementById('p-image').value = p.image;
-    document.getElementById('p-stock').value = p.stock;
     document.getElementById('p-category').value = p.category_id;
+    
+    // Generáljuk a kategóriának megfelelő inputokat a meglévő termékhez
+    generateAdminSizeInputs(p.id);
+
     document.getElementById('p-desc').value = p.description;
 }
 
@@ -286,26 +330,53 @@ async function saveProduct() {
     if (!supabaseClient) return;
     
     const id = document.getElementById('p-id').value;
+    
+    // Összeszeljük a méretenkénti készletet
+    const sizeInputs = document.querySelectorAll('.size-stock-input');
+    let totalStock = 0;
+    let sizeBreakdown = {};
+    sizeInputs.forEach(inp => {
+        const val = parseInt(inp.value) || 0;
+        totalStock += val;
+        sizeBreakdown[inp.dataset.size] = val;
+    });
+
     const product = {
         name: document.getElementById('p-name').value,
         price: parseInt(document.getElementById('p-price').value),
         image: document.getElementById('p-image').value,
-        stock: parseInt(document.getElementById('p-stock').value) || 0,
+        stock: totalStock, // A Supabase csak az összeget kapja
         category_id: parseInt(document.getElementById('p-category').value),
         description: document.getElementById('p-desc').value
     };
 
     try {
         let result;
+        let savedId = id;
+        
         if (id) {
-            // Frissítés
-            result = await supabaseClient.from('products').update(product).eq('id', id);
+            // Frissítés és a válasz lekérése a mentett ID miatt
+            result = await supabaseClient.from('products').update(product).eq('id', id).select().single();
+            if(result.data) savedId = result.data.id;
         } else {
             // Új termék beszúrása
-            result = await supabaseClient.from('products').insert(product);
+            result = await supabaseClient.from('products').insert(product).select().single();
+            if (result.data) savedId = result.data.id;
         }
 
         if (result.error) throw result.error;
+
+        // Eltároljuk a méretenkénti bontást a local storage-ban, hogy a vásárlói oldal (script.js) megtalálja
+        if (savedId) {
+            const stockMap = JSON.parse(localStorage.getItem('customStockMap') || '{}');
+            stockMap[savedId] = sizeBreakdown;
+            localStorage.setItem('customStockMap', JSON.stringify(stockMap));
+            // Frissítsük a memóriában lévő listát is, hogy ne kelljen újra tölteni mindent
+            if(window.allProducts) {
+                const prodInArray = window.allProducts.find(x=>x.id == savedId);
+                if(prodInArray) prodInArray.stock = totalStock;
+            }
+        }
 
         showToast(id ? 'Termék frissítve!' : 'Termék hozzáadva!');
         hideProductForm();
