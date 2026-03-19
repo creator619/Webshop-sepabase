@@ -801,19 +801,46 @@ h1, h2, h3 {
 
 /* Kereső sáv */
 .search-container {
-    padding: 10px 5%;
-    background: white;
+    padding: 20px 5%;
+    background: var(--bg-light);
     display: flex;
     justify-content: center;
-    border-bottom: 1px solid var(--border);
+}
+
+.search-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 18px;
+    font-size: 1.2rem;
+    color: #666;
+    pointer-events: none;
 }
 
 .search-wrapper input {
     width: 100%;
-    max-width: 600px;
-    padding: 12px 20px 12px 45px;
-    border: 1px solid var(--border);
+    padding: 15px 20px 15px 50px;
+    border: 2px solid transparent;
     border-radius: 30px;
+    font-size: 1.1rem;
+    font-family: inherit;
+    background: white;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    color: var(--text-dark);
+}
+
+.search-wrapper input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 5px 15px rgba(212, 175, 55, 0.25);
+    transform: translateY(-2px);
 }
 
 /* Toast értesítések */
