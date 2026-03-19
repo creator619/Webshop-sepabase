@@ -325,6 +325,7 @@ h1, h2, h3 {
     padding: 60px 5%;
     max-width: 1000px;
     margin: 0 auto;
+    min-height: 60vh;
 }
 
 .cart-item {
@@ -336,13 +337,101 @@ h1, h2, h3 {
     border-radius: 8px;
     box-shadow: var(--shadow);
     margin-bottom: 20px;
+    transition: var(--transition);
+}
+
+.cart-item:hover {
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
 }
 
 .cart-item img {
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     object-fit: cover;
+    border-radius: 8px;
+}
+
+.cart-item-info {
+    flex: 1;
+}
+
+.cart-item-info h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.25rem;
+    color: var(--primary);
+}
+
+.cart-item-info p {
+    margin: 0 0 15px 0;
+    color: #666;
+    font-weight: 700;
+}
+
+.cart-item-qty {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.cart-item-qty span {
+    font-weight: 700;
+    min-width: 40px;
+    text-align: center;
+}
+
+.qty-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    background: white;
     border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: var(--primary);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qty-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.cart-item-actions {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 100px;
+}
+
+.item-total {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0;
+}
+
+.remove-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    font-weight: 700;
+    text-decoration: underline;
+    padding: 5px 0;
+    transition: var(--transition);
+    font-size: 0.95rem;
+}
+
+.remove-btn:hover {
+    color: #a71d2a;
 }
 
 /* Kosár összegző rész */
