@@ -123,6 +123,7 @@
                         <th>ID</th>
                         <th>Vevő</th>
                         <th>Összeg</th>
+                        <th>Szállítás</th>
                         <th>Dátum</th>
                         <th>Státusz</th>
                         <th>Művelet</th>
@@ -155,15 +156,22 @@
                     <button type="button" class="btn-add" onclick="document.getElementById('p-upload').click()" style="background: #555; white-space: nowrap;">Feltöltés</button>
                 </div>
                 
-                <input type="number" id="p-stock" placeholder="Készlet (db)">
-                
                 <!-- Kategória választó -->
-                <select id="p-category" required>
+                <select id="p-category" required onchange="generateAdminSizeInputs()">
+                    <option value="">Válassz kategóriát...</option>
                     <option value="1">Ing</option>
                     <option value="2">Zakó</option>
                     <option value="3">Nadrág</option>
                     <option value="4">Cipő</option>
                 </select>
+
+                <!-- Méretenkénti készlet (dinamikusan generálva a kategória alapján) -->
+                <div class="size-stock-container" style="margin-bottom: 15px; background: #f9f9f9; padding: 15px; border-radius: 4px; border: 1px solid var(--border);">
+                    <label style="display:block; margin-bottom: 10px; font-weight: bold; color: var(--primary);">Készlet méretenként:</label>
+                    <div id="admin-size-inputs" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <span style="color: #666; font-size: 0.9rem;">Kérlek válassz először kategóriát!</span>
+                    </div>
+                </div>
                 
                 <textarea id="p-desc" placeholder="Leírás"></textarea>
                 
