@@ -71,6 +71,18 @@ h1, h2, h3 {
 }
 
 /* --- Főmenü navigáció --- */
+.mobile-menu-toggle {
+    display: none; /* Asztali gépen ne legyen látható */
+    background: transparent;
+    border: none;
+    font-size: 1.8rem;
+    color: var(--primary);
+    cursor: pointer;
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
 .menu {
     background: white;
     padding: 0;
