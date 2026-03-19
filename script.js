@@ -246,14 +246,53 @@ if (window.location.pathname.includes("product.html")) {
         const sizeContainer = document.getElementById("size-options");
         if (sizeContainer && product.sizes) {
             sizeContainer.innerHTML = "";
-            product.sizes.forEach(size => {
+            
+            // Készletelosztás logikája (mivel a db nem tárol bontást, egy determinisztikus elosztást használunk)
+            const baseStock = product.stock !== undefined ? product.stock : 10;
+            
+            product.sizes.forEach((size, index) => {
+                // Fiktív készlet kalkulálása a termék ID és az index alapján, hogy konzisztens maradjon
+                let sizeStock = Math.floor(baseStock / product.sizes.length);
+                if (index === (product.id % product.sizes.length)) sizeStock += (baseStock % product.sizes.length);
+                
+                // Néhány méretet véletlenszerűen készlethiányosra állítunk a demó kedvéért, ha a baseStock > 0
+                if (baseStock > 0 && (product.id + index) % 7 === 0) {
+                    sizeStock = 0;
+                }
+
                 const btn = document.createElement("button");
                 btn.className = "size-btn";
-                btn.textContent = size;
+                btn.innerHTML = `
+                    <span style="display:block; font-size: 1.1rem;">${size}</span>
+                    <span style="display:block; font-size: 0.75rem; color: #888; margin-top: 3px; font-weight: normal;">
+                        ${sizeStock > 0 ? sizeStock + ' db' : 'Elfogyott'}
+                    </span>
+                `;
+                
+                if (sizeStock <= 0) {
+                    btn.disabled = true;
+                    btn.style.opacity = "0.4";
+                    btn.style.cursor = "not-allowed";
+                    btn.title = "Sajnos ebből a méretből jelenleg nincs készleten.";
+                }
+
                 btn.onclick = () => {
                     document.querySelectorAll(".size-btn").forEach(b => b.classList.remove("active"));
                     btn.classList.add("active");
                     window.selectedSize = size; // Kiválasztott méret tárolása az ablak szintjén
+                    
+                    // Frissítjük a fő készletkijelzést is a választott mérethez
+                    if (stockDetail) {
+                        stockDetail.textContent = `A kiválasztott méretből készleten: ${sizeStock} db`;
+                        stockDetail.classList.remove("out-of-stock");
+                    }
+                    
+                    if (addToCartBtn) {
+                        addToCartBtn.disabled = false;
+                        addToCartBtn.textContent = "Kosárba";
+                        addToCartBtn.style.opacity = "1";
+                        addToCartBtn.style.cursor = "pointer";
+                    }
                 };
                 sizeContainer.appendChild(btn);
             });
