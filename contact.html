@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ügyfélszolgálat & Kapcsolat - Ruházati Webshop</title>
+    <!-- Közös stílusok (tartalmazza a contact.css-t is) -->
+    <link rel="stylesheet" href="style.css?v=1.2">
+</head>
+
+<body>
+
+    <header class="hero" style="min-height: 200px;">
+        <div class="hero-text">
+            <h1>Ügyfélszolgálat és Kapcsolat</h1>
+            <p>Miben segíthetünk? Itt minden fontos információt megtalálsz, vagy írhatsz nekünk.</p>
+        </div>
+    </header>
+
+    <div class="search-container">
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Keress a GYIK-ben...">
+        </div>
+    </div>
+
+    <nav class="menu">
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle">☰</button>
+        <ul id="main-menu">
+            <li onclick="window.location.href='index.html'">Főoldal</li>
+            <li data-category="1">Ing</li>
+            <li data-category="2">Zakó</li>
+            <li data-category="3">Nadrág</li>
+            <li data-category="4">Cipő</li>
+            <li onclick="window.location.href='cart.html'" class="cart-menu">
+                Kosár <span id="cart-count">(0)</span>
+            </li>
+            <div id="user-nav" class="user-status">
+                <li onclick="window.location.href='login.html'" id="login-link">Bejelentkezés</li>
+                <li onclick="window.location.href='register.html'" id="register-link">Regisztráció</li>
+            </div>
+        </ul>
+    </nav>
+
+    <main class="contact-main">
+        <div class="contact-container">
+            
+            <!-- Bal oldal: Információk és GYIK -->
+            <div class="info-section">
+                
+                <h2 class="section-title">Gyakori Kérdések (GYIK)</h2>
+                <div class="faq-container">
+                    <div class="faq-item">
+                        <button class="faq-question">Mennyi a szállítási idő?</button>
+                        <div class="faq-answer">
+                            <p>A szállítás általában 1-3 munkanapot vesz igénybe, attól függően, hogy melyik szállítási módot választottad (házhozszállítás vagy csomagautomata).</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-question">Hogyan küldhetem vissza a terméket?</button>
+                        <div class="faq-answer">
+                            <p>Vásárlásodtól számított 14 napon belül indoklás nélkül visszaküldheted a terméket. Ehhez kérjük, vedd fel velünk a kapcsolatot az alábbi űrlapon.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-question">Milyen fizetési módok vannak?</button>
+                        <div class="faq-answer">
+                            <p>Jelenleg bankkártyás fizetésre (SimplePay/Stripe), utánvétre és előre utalásra van lehetőség.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="shipping-info-box">
+                    <h3>🚀 Szállítási Információk</h3>
+                    <p>Minden rendelést a GLS vagy a Foxpost szállít ki. 10.000 Ft felett a szállítás teljesen ingyenes!</p>
+                </div>
+                
+                <div class="company-details">
+                    <h3>🏢 Elérhetőségeink</h3>
+                    <p><strong>Cégnév:</strong> Ruházati Webshop Kft.</p>
+                    <p><strong>Cím:</strong> 1051 Budapest, Fashion utca 12.</p>
+                    <p><strong>Telefon:</strong> +36 30 123 4567 (H-P, 9:00 - 17:00)</p>
+                    <p><strong>Email:</strong> info@webshop.hu</p>
+                </div>
+
+            </div>
+
+            <!-- Jobb oldal: Kapcsolat űrlap -->
+            <div class="contact-form-section">
+                <h2 class="section-title">Írj nekünk!</h2>
+                <p>Kérdésed van vagy problémába ütköztél? Töltsd ki az alábbi űrlapot, és hamarosan válaszolunk!</p>
+                
+                <form id="contact-form" class="contact-form">
+                    <div class="form-group">
+                        <label for="contact-name">Teljes Név</label>
+                        <input type="text" id="contact-name" placeholder="Vezeték- és keresztnév" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contact-email">Email Cím</label>
+                        <input type="email" id="contact-email" placeholder="pelda@email.hu" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contact-subject">Tárgy</label>
+                        <select id="contact-subject" required>
+                            <option value="">Kérjük, válassz...</option>
+                            <option value="order">Rendeléssel kapcsolatos kérdés</option>
+                            <option value="shipping">Szállításról érdeklődnék</option>
+                            <option value="return">Termék visszaküldése/csere</option>
+                            <option value="other">Egyéb</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contact-message">Üzenet</label>
+                        <textarea id="contact-message" rows="6" placeholder="Miben segíthetünk?" required></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn primary-btn">Üzenet küldése</button>
+                    <div id="contact-status" class="status-msg"></div>
+                </form>
+            </div>
+
+        </div>
+    </main>
+
+    <div class="shipping-banner">
+        <span>🚚 10.000 Ft felett <strong>INGYENES</strong> a szállítás!</span>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h4>Rólunk</h4>
+                <p>Prémium férfiruha webshop, ahol a stílus és a minőség találkozik. Válogatott kollekcióinkkal
+                    segítünk, hogy minden alkalommal a legjobb formádat hozhasd.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Gyors Linkek</h4>
+                <ul>
+                    <li><a href="index.html">Főoldal</a></li>
+                    <li><a href="cart.html">Kosár</a></li>
+                    <li><a href="login.html">Bejelentkezés</a></li>
+                    <li><a href="register.html">Regisztráció</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Ügyfélszolgálat</h4>
+                <ul>
+                    <li><a href="contact.html">Szállítási információk</a></li>
+                    <li><a href="contact.html">Gyakori kérdések</a></li>
+                    <li><a href="contact.html">Visszaküldés</a></li>
+                    <li><a href="contact.html">Kapcsolatfelvétel</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Kapcsolat</h4>
+                <p>Email: info@webshop.hu</p>
+                <p>Telefon: +36 30 123 4567</p>
+                <p>Cím: 1051 Budapest, Fashion utca 12.</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Ruházati Webshop - Minden jog fenntartva.</p>
+        </div>
+    </footer>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Közös scriptek (tartalmazza a contact.js logikát is) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="products_data.js?v=1.1"></script>
+    <script src="script.js?v=1.2"></script>
+
+</body>
+
+</html>
