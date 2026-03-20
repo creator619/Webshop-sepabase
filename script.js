@@ -251,12 +251,19 @@ if (window.location.pathname.includes("product.html")) {
             const baseStock = product.stock !== undefined ? product.stock : 10;
             
             product.sizes.forEach((size, index) => {
-                // Fiktív készlet kalkulálása a termék ID és az index alapján, hogy konzisztens maradjon
-                let sizeStock = Math.floor(baseStock / product.sizes.length);
-                if (index === (product.id % product.sizes.length)) sizeStock += (baseStock % product.sizes.length);
+                let sizeStock = 0;
                 
-                // Néhány méretet véletlenszerűen készlethiányosra állítunk a demó kedvéért, ha a baseStock > 0
-                if (baseStock > 0 && (product.id + index) % 7 === 0) {
+                if (product.size_stocks && product.size_stocks[size] !== undefined) {
+                    // Valódi készletadat a DB-ből
+                    sizeStock = product.size_stocks[size];
+                } else {
+                    // Fallback: Ha még nincs méretspecifikus adat, fiktív elosztás (régi termékeknél)
+                    sizeStock = Math.floor(baseStock / product.sizes.length);
+                    if (index === (product.id % product.sizes.length)) sizeStock += (baseStock % product.sizes.length);
+                }
+
+                // Néhány méretet véletlenszerűen készlethiányosra állítunk a demó kedvéért, ha a baseStock > 0 és MÉG NINCS valós adat
+                if (!product.size_stocks && baseStock > 0 && (product.id + index) % 7 === 0) {
                     sizeStock = 0;
                 }
 
@@ -516,8 +523,8 @@ if (window.location.pathname.includes("checkout.html")) {
             total += item.price * itemQty;
             container.innerHTML += `
                 <div class="checkout-item">
-                    <span>${item.name} ${item.size ? `(${item.size})` : ''} x ${itemQty}</span>
-                    <span>${(item.price * itemQty).toLocaleString()} Ft</span>
+                    <span>${item.name} ${item.size ? `(${item.size})` : ''} <span style="color: #888; font-size: 0.9rem;">(${itemQty} db)</span></span>
+                    <span style="font-weight: 500;">${(item.price * itemQty).toLocaleString()} Ft</span>
                 </div>
             `;
         });
@@ -608,6 +615,9 @@ if (window.location.pathname.includes("checkout.html")) {
                 const { data: order, error: orderError } = await supabaseClient.from('orders').insert({
                     user_email: email,
                     user_id: userId,
+                    customer_name: name,     // Név mentése
+                    customer_phone: phone,   // Telefon mentése
+                    customer_address: address, // Cím mentése
                     total_price: checkoutTotal,
                     status: 'pending',
                     shipping_method: shippingMethod,
@@ -620,6 +630,7 @@ if (window.location.pathname.includes("checkout.html")) {
                 const orderItems = cart.map(item => ({
                     order_id: order.id,
                     product_name: item.name,
+                    size: item.size || null,
                     price: item.price,
                     quantity: item.quantity || 1
                 }));
@@ -631,7 +642,8 @@ if (window.location.pathname.includes("checkout.html")) {
                 const updatePromises = cart.map(item => {
                     return supabaseClient.rpc('increment_stock', { 
                         product_id: item.id, 
-                        amount: -(item.quantity || 1) 
+                        amount: -(item.quantity || 1),
+                        size_val: item.size || null // Méret átadása a pontos levonáshoz
                     });
                 });
 
@@ -789,7 +801,7 @@ if (window.location.pathname.includes('profile.html')) {
                 .from('orders')
                 .select(`
                     id, total_price, status, created_at,
-                    order_items (product_name, price, quantity)
+                    order_items (product_name, size, price, quantity)
                 `)
                 .eq('user_email', user.email)
                 .order('created_at', { ascending: false })
@@ -807,8 +819,8 @@ if (window.location.pathname.includes('profile.html')) {
 
                                 let itemsHtml = order.order_items ? order.order_items.map(item => `
                                     <li class="order-item">
-                                        <span>${item.product_name} ${item.quantity > 1 ? `x ${item.quantity}` : ''}</span>
-                                        <span>${(item.price * item.quantity).toLocaleString()} Ft</span>
+                                        <span>${item.product_name} ${item.size ? `(${item.size})` : ''} <span style="color: #888; font-size: 0.85rem;">(${item.quantity} db)</span></span>
+                                        <span style="font-weight: 600;">${(item.price * item.quantity).toLocaleString()} Ft</span>
                                     </li>
                                 `).join('') : '<p>Tételek betöltése...</p>';
 
@@ -1091,7 +1103,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // ==========================================
-// �gyf�lkapcsolati oldal (contact.html) logika
+// �gyf�lkapcsolati oldal (contact.html) logika
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     // 1. FAQ Harmonika működése
@@ -1155,4 +1167,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
 
