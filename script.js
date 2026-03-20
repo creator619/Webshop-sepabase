@@ -1088,3 +1088,71 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchCategories();
     updateCartCount();
 });
+
+
+// ==========================================
+// �gyf�lkapcsolati oldal (contact.html) logika
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. FAQ Harmonika működése
+    const faqItems = document.querySelectorAll('.faq-item');
+
+    faqItems.forEach(item => {
+        const questionBtn = item.querySelector('.faq-question');
+        
+        questionBtn.addEventListener('click', () => {
+            // Bezárjuk a többit (opcionális, ha csak 1 lehet nyitva egyszerre)
+            const currentlyActive = document.querySelector('.faq-item.active');
+            if (currentlyActive && currentlyActive !== item) {
+                currentlyActive.classList.remove('active');
+            }
+            
+            // Re-toggle aktuális
+            item.classList.toggle('active');
+        });
+    });
+
+    // 2. Kapcsolati űrlap kezelése (mock)
+    const contactForm = document.getElementById('contact-form');
+    const statusMsg = document.getElementById('contact-status');
+
+    if (contactForm) {
+        contactForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('contact-name').value;
+            const email = document.getElementById('contact-email').value;
+            const subject = document.getElementById('contact-subject').value;
+            const message = document.getElementById('contact-message').value;
+
+            // Alap validáció már megtörtént a HTML5 required attributummal
+            
+            // Gomb tiltása a feldolgozás alatt
+            const submitBtn = contactForm.querySelector('.submit-btn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Küldés folyamatban...';
+            submitBtn.disabled = true;
+
+            // Szimulált backend kérés
+            setTimeout(() => {
+                // Siker esetén ürítés és üzenet
+                contactForm.reset();
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                
+                statusMsg.textContent = 'Köszönjük az üzenetet! Hamarosan felvesszük veled a kapcsolatot.';
+                statusMsg.className = 'status-msg success';
+                
+                // Üzenet eltüntetése kis idő múlva
+                setTimeout(() => {
+                    statusMsg.style.display = 'none';
+                    statusMsg.className = 'status-msg'; // Alap érték vissza
+                    // Biztos ami biztos, inline style reset
+                    setTimeout(() => statusMsg.style.display = '', 100);
+                }, 5000);
+                
+            }, 1500);
+        });
+    }
+});
+
