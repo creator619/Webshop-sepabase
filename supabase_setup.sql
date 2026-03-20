@@ -19,7 +19,8 @@ CREATE TABLE products (
   image TEXT,                            -- Kép elérési útja vagy URL-je
   category_id INTEGER REFERENCES categories(id), -- Kapcsolat a kategóriákkal
   description TEXT,                      -- Részletes leírás
-  stock INTEGER DEFAULT 10               -- Raktárkészlet mennyisége
+  stock INTEGER DEFAULT 10,              -- Raktárkészlet mennyisége
+  size_stocks JSONB DEFAULT '{}'::jsonb  -- Méretspecifikus készlet (JSON bontás)
 );
 
 -- Mintatermékek betöltése a kezdéshez
@@ -56,6 +57,9 @@ CREATE TABLE orders (
   status TEXT DEFAULT 'pending',         -- Rendelés állapota (pl. függőben, teljesítve)
   shipping_method TEXT,                  -- Választott szállítási mód
   payment_method TEXT,                   -- Választott fizetési mód
+  customer_name TEXT,                    -- Vásárló neve (mentve a rendeléssel)
+  customer_phone TEXT,                   -- Vásárló telefonszáma
+  customer_address TEXT,                 -- Szállítási cím
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) -- Időpont
 );
 
@@ -64,6 +68,7 @@ CREATE TABLE order_items (
   id SERIAL PRIMARY KEY,
   order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE, -- Melyik rendeléshez tartozik
   product_name TEXT NOT NULL,            -- Termék neve (mentve, ha később törölnék a terméket)
+  size TEXT,                             -- A választott méret
   price INTEGER NOT NULL,                -- Eladási ár a vásárlás pillanatában
   quantity INTEGER DEFAULT 1             -- Mennyiség
 );
@@ -128,3 +133,26 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- Függvény: Készletkezelés (Méretspecifikus)
+-- Ez a függvény kezeli a készlet levonást és hozzáadást.
+CREATE OR REPLACE FUNCTION public.increment_stock(product_id INT, amount INT, size_val TEXT DEFAULT NULL)
+RETURNS void AS $$
+BEGIN
+  IF size_val IS NOT NULL THEN
+    UPDATE public.products
+    SET 
+      stock = stock + amount,
+      size_stocks = jsonb_set(
+        size_stocks, 
+        ARRAY[size_val], 
+        ((COALESCE(size_stocks->>size_val, '0')::int) + amount)::text::jsonb
+      )
+    WHERE id = product_id;
+  ELSE
+    UPDATE public.products
+    SET stock = stock + amount
+    WHERE id = product_id;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
