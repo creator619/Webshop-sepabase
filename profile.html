@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="hu">
 
 <head>
@@ -24,49 +24,69 @@
         </ul>
     </nav>
 
+    <!-- Hero szekció -->
+    <header class="hero profile-hero">
+        <div class="hero-text">
+            <h1>Saját Profil</h1>
+            <p>Kezeld adataidat és kövesd nyomon korábbi rendeléseidet egy helyen.</p>
+        </div>
+    </header>
+
     <!-- Felhasználói profil oldal fő tartalma -->
     <main class="profile-page">
-        <h1>Saját Fiók</h1>
-
         <div class="profile-container">
             <!-- Bal oldali oszlop: Személyes adatok -->
             <div class="profile-details">
-                <h2>Adataim</h2>
-                <!-- Ide kerülnek dinamikusan a felhasználó adatai (név, email, cím) -->
+                <h2 class="section-title">Személyes Adataim</h2>
+                
+                <!-- Az adatok kártyája (dinamikusan töltve) -->
                 <div id="user-details-card" class="details-card">
-                    <p>Betöltés...</p>
+                    <div class="user-data-item">
+                        <strong>Név</strong>
+                        <span>Betöltés...</span>
+                    </div>
+                    <div class="user-data-item">
+                        <strong>Email</strong>
+                        <span>Betöltés...</span>
+                    </div>
                 </div>
-                <button id="edit-profile-btn" class="btn-primary" style="margin-top: 15px;">Profil szerkesztése</button>
 
-                <!-- Profil szerkesztő űrlap (alapértelmezetten rejtett, gombra kattintva jelenik meg) -->
-                <div id="edit-profile-form" class="edit-form" style="display: none; margin-top: 20px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: var(--shadow);">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <button id="edit-profile-btn" class="submit-btn primary-btn">Profil szerkesztése</button>
+                </div>
+
+                <!-- Profil szerkesztő űrlap -->
+                <div id="edit-profile-form" class="edit-form contact-form-section" style="display: none; animation: fadeIn 0.4s ease;">
                     <h3>Adatok módosítása</h3>
-                    <div class="form-group">
-                        <label for="edit-name">Név</label>
-                        <input type="text" id="edit-name" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-phone">Telefonszám</label>
-                        <input type="text" id="edit-phone" class="form-input" placeholder="+36 30 123 4567">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-address">Szállítási cím</label>
-                        <textarea id="edit-address" class="form-input" rows="3" placeholder="Irányítószám, Város, Utca..."></textarea>
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-top: 15px;">
-                        <!-- Mentés és Mégse gombok -->
-                        <button onclick="saveProfileChanges()" class="btn-primary">Mentés</button>
-                        <button onclick="toggleEditForm(false)" class="btn-secondary">Mégse</button>
+                    <div class="contact-form">
+                        <div class="form-group">
+                            <label for="edit-name">Teljes Név</label>
+                            <input type="text" id="edit-name" placeholder="Vezeték- és keresztnév">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-phone">Telefonszám</label>
+                            <input type="text" id="edit-phone" placeholder="+36 30 123 4567">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-address">Szállítási cím</label>
+                            <textarea id="edit-address" rows="3" placeholder="Irányítószám, Város, Utca, házszám..."></textarea>
+                        </div>
+                        <div style="display: flex; gap: 15px; margin-top: 10px;">
+                            <button onclick="saveProfileChanges()" class="submit-btn primary-btn" style="flex: 1;">Mentés</button>
+                            <button onclick="toggleEditForm(false)" class="submit-btn" style="flex: 1; background-color: #eee; color: #333;">Mégse</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Jobb oldali oszlop: Korábbi rendelések -->
             <div class="order-history">
-                <h2>Rendeléseim</h2>
+                <h2 class="section-title">Korábbi Rendeléseim</h2>
                 <div id="orders-list">
-                    <!-- Ide kerülnek generálva a korábbi vásárlások -->
-                    <p>Még nincsenek rendeléseid.</p>
+                    <!-- Dinamikusan töltve -->
+                    <div class="details-card">
+                        <p style="text-align: center; color: #888;">Még nincsenek rendeléseid.</p>
+                    </div>
                 </div>
             </div>
         </div>
