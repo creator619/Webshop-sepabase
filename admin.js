@@ -110,7 +110,8 @@ async function loadOrders() {
             .from('orders')
             .select(`
                 id, user_email, total_price, status, created_at, shipping_method, payment_method,
-                order_items (product_name, price, quantity)
+                customer_name, customer_phone, customer_address,
+                order_items (product_name, size, price, quantity)
             `)
             .order('created_at', { ascending: false });
 
@@ -124,7 +125,7 @@ async function loadOrders() {
             // Rendelési tételek HTML listája
             const itemsHtml = o.order_items ? o.order_items.map(item => `
                 <div style="font-size: 0.85rem; color: #666; margin-bottom: 2px;">
-                    • ${item.product_name} <b>x ${item.quantity}</b> (${item.price.toLocaleString()} Ft)
+                    • ${item.product_name} ${item.size ? `<b>(${item.size})</b>` : ''} <span style="color: #444; font-weight: 500;">(${item.quantity} db)</span> — <b>${(item.price * item.quantity).toLocaleString()} Ft</b>
                 </div>
             `).join('') : 'Nincs adat';
 
@@ -136,8 +137,13 @@ async function loadOrders() {
                 <tr>
                     <td>#${o.id}</td>
                     <td>
-                        <b>${o.user_email}</b><br>
-                        <div class="order-items-detail" style="margin-top: 5px;">
+                        <b>${o.customer_name || 'Ismeretlen'}</b><br>
+                        <span style="font-size: 0.85rem; color: #555;">${o.user_email}</span><br>
+                        <div style="font-size: 0.85rem; color: #777; margin-top: 3px;">
+                            📞 ${o.customer_phone || '-'}<br>
+                            🏠 ${o.customer_address || '-'}
+                        </div>
+                        <div class="order-items-detail" style="margin-top: 5px; border-top: 1px solid #eee; pt-2;">
                             ${itemsHtml}
                         </div>
                     </td>
@@ -227,6 +233,7 @@ async function loadProducts() {
             .order('id', { ascending: true });
 
         if (error) throw error;
+        window.allProducts = products;
 
         const tbody = document.querySelector('#admin-products-table tbody');
         tbody.innerHTML = '';
@@ -288,9 +295,13 @@ function generateAdminSizeInputs(productId = null) {
     // Kategóriától függő méretlista
     let sizes = category == '4' ? ["40", "41", "42", "43", "44", "45"] : ["S", "M", "L", "XL", "XXL"];
     
-    // Meglévő adatok kinyerése, ha szerkesztünk
+    // Meglévő adatok kinyerése a termékből (size_stocks oszlop a DB-ben)
     let customStocks = {};
-    if (productId) {
+    const product = window.allProducts?.find(p => p.id == productId);
+    if (product && product.size_stocks) {
+        customStocks = product.size_stocks;
+    } else {
+        // Fallback a régi localStorage-ra, ha még nincs fent az új DB oszlopban
         const stockMap = JSON.parse(localStorage.getItem('customStockMap') || '{}');
         if (stockMap[productId]) customStocks = stockMap[productId];
     }
@@ -345,23 +356,19 @@ async function saveProduct() {
         name: document.getElementById('p-name').value,
         price: parseInt(document.getElementById('p-price').value),
         image: document.getElementById('p-image').value,
-        stock: totalStock, // A Supabase csak az összeget kapja
+        stock: totalStock,
+        size_stocks: sizeBreakdown, // Méretenkénti bontás mentése a DB-be
         category_id: parseInt(document.getElementById('p-category').value),
         description: document.getElementById('p-desc').value
     };
 
     try {
         let result;
-        let savedId = id;
         
         if (id) {
-            // Frissítés és a válasz lekérése a mentett ID miatt
             result = await supabaseClient.from('products').update(product).eq('id', id).select().single();
-            if(result.data) savedId = result.data.id;
         } else {
-            // Új termék beszúrása
             result = await supabaseClient.from('products').insert(product).select().single();
-            if (result.data) savedId = result.data.id;
         }
 
         if (result.error) throw result.error;
