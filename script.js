@@ -966,9 +966,9 @@ if (window.location.pathname.includes('wishlist.html')) {
  */
 async function fetchCategories() {
     try {
-        if (!supabase) throw new Error("Supabase nincs betöltve");
+        if (!supabaseClient) throw new Error("Supabase nincs betöltve");
         
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('categories')
             .select('*');
 
