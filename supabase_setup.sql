@@ -77,27 +77,32 @@ CREATE TABLE order_items (
 -- BIZTONSÁGI BEÁLLÍTÁSOK (RLS - Row Level Security)
 -- ==========================================
 
+-- 0. Segédfüggvény a végtelen rekurzió elkerülésére (SECURITY DEFINER szükséges az RLS megkerüléséhez az ellenőrzéskor)
+CREATE OR REPLACE FUNCTION public.is_admin_user() 
+RETURNS boolean AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND is_admin = true
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Kategóriák: Bárki láthatja őket, adminok módosíthatják
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Mindenki olvashatja a kategóriákat" ON categories FOR SELECT USING (true);
-CREATE POLICY "Adminok módosíthatják a kategóriákat" ON categories FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true)
-);
+CREATE POLICY "Adminok módosíthatják a kategóriákat" ON categories FOR ALL USING (public.is_admin_user());
 
 -- Termékek: Bárki láthatja őket, adminok módosíthatják
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Mindenki olvashatja a termékeket" ON products FOR SELECT USING (true);
-CREATE POLICY "Adminok módosíthatják a termékeket" ON products FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true)
-);
+CREATE POLICY "Adminok módosíthatják a termékeket" ON products FOR ALL USING (public.is_admin_user());
 
 -- Profilok: Saját adatok elérése + Adminok
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Felhasználók láthatják a saját profiljukat" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Felhasználók frissíthetik a saját profiljukat" ON profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Adminok láthatják az összes profilt" ON profiles FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true)
-);
+CREATE POLICY "Adminok láthatják az összes profilt" ON profiles FOR SELECT USING (public.is_admin_user());
 
 -- Rendelések:
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
@@ -106,13 +111,9 @@ CREATE POLICY "Felhasználók láthatják a saját rendeléseiket" ON orders FOR
 -- Leadhatnak új rendelést
 CREATE POLICY "Felhasználók leadhatnak rendelést" ON orders FOR INSERT WITH CHECK (auth.uid() = user_id);
 -- Az adminok viszont láthatják az összes beérkező rendelést
-CREATE POLICY "Adminok láthatják az összes rendelést" ON orders FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true)
-);
+CREATE POLICY "Adminok láthatják az összes rendelést" ON orders FOR SELECT USING (public.is_admin_user());
 -- Adminok frissíthetik a rendelések állapotát
-CREATE POLICY "Adminok frissíthetik a rendeléseket" ON orders FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true)
-);
+CREATE POLICY "Adminok frissíthetik a rendeléseket" ON orders FOR UPDATE USING (public.is_admin_user());
 
 -- Rendelt tételek:
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
@@ -121,11 +122,7 @@ CREATE POLICY "Felhasználók és adminok láthatják a tételeket" ON order_ite
   EXISTS (
     SELECT 1 FROM orders 
     WHERE orders.id = order_items.order_id 
-    AND (orders.user_id = auth.uid() OR EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
-      AND profiles.is_admin = true
-    ))
+    AND (orders.user_id = auth.uid() OR public.is_admin_user())
   )
 );
 -- Tételek hozzáadása rendeléshez
