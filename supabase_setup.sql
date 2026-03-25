@@ -77,25 +77,41 @@ CREATE TABLE order_items (
 -- BIZTONSÁGI BEÁLLÍTÁSOK (RLS - Row Level Security)
 -- ==========================================
 
--- Kategóriák: Bárki láthatja őket (akár bejelentkezés nélkül is)
+-- Kategóriák: Bárki láthatja őket, adminok módosíthatják
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Mindenki olvashatja a kategóriákat" ON categories FOR SELECT USING (true);
+CREATE POLICY "Adminok módosíthatják a kategóriákat" ON categories FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true)
+);
 
--- Termékek: Bárki láthatja őket a webshopban
+-- Termékek: Bárki láthatja őket, adminok módosíthatják
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Mindenki olvashatja a termékeket" ON products FOR SELECT USING (true);
+CREATE POLICY "Adminok módosíthatják a termékeket" ON products FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true)
+);
+
+-- Profilok: Saját adatok elérése + Adminok
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Felhasználók láthatják a saját profiljukat" ON profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Felhasználók frissíthetik a saját profiljukat" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Adminok láthatják az összes profilt" ON profiles FOR SELECT USING (
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true)
+);
 
 -- Rendelések:
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 -- A felhasználók csak a saját rendeléseiket láthatják
 CREATE POLICY "Felhasználók láthatják a saját rendeléseiket" ON orders FOR SELECT USING (auth.uid() = user_id);
+-- Leadhatnak új rendelést
+CREATE POLICY "Felhasználók leadhatnak rendelést" ON orders FOR INSERT WITH CHECK (auth.uid() = user_id);
 -- Az adminok viszont láthatják az összes beérkező rendelést
 CREATE POLICY "Adminok láthatják az összes rendelést" ON orders FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM profiles 
-    WHERE profiles.id = auth.uid() 
-    AND profiles.is_admin = true
-  )
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true)
+);
+-- Adminok frissíthetik a rendelések állapotát
+CREATE POLICY "Adminok frissíthetik a rendeléseket" ON orders FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true)
 );
 
 -- Rendelt tételek:
@@ -110,6 +126,13 @@ CREATE POLICY "Felhasználók és adminok láthatják a tételeket" ON order_ite
       WHERE profiles.id = auth.uid() 
       AND profiles.is_admin = true
     ))
+  )
+);
+-- Tételek hozzáadása rendeléshez
+CREATE POLICY "Felhasználók hozzáadhatnak tételeket" ON order_items FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM orders 
+    WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()
   )
 );
 
