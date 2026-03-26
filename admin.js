@@ -11,21 +11,56 @@ window.supabaseClient = supabaseClient;
 const ADMIN_API = "http://localhost:3000"; 
 
 // Az oldal betöltésekor lefutó fő inicializáló rész
-document.addEventListener('DOMContentLoaded', () => {
-    // Jogosultság ellenőrzés: Csak admin felhasználók léphetnek be
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Alapszintű ellenőrzés a localStorage-ból (gyors visszajelzés)
     const user = JSON.parse(localStorage.getItem('user'));
     
-    if (!user || !user.is_admin) {
-        alert('Nincs jogosultságod ehhez az oldalhoz! Kérlek lépj be egy olyan fiókkal, ami admin jogosultsággal rendelkezik.');
-        window.location.href = 'index.html'; // Viszaküldés a főoldalra
+    if (!user) {
+        window.location.href = 'login.html';
         return;
     }
 
-    // Adatok betöltése az adatbázisból
-    loadOrders();       // Rendelések
-    loadStats();        // Statisztikák (bevétel, stb.)
-    loadCategoriesAdmin(); // Kategóriák a termékfelvételhez
-    setupTabs();        // Fülek közötti navigáció beállítása
+    // 2. KRITIKUS JAVÍTÁS: Szerveroldali ellenőrzés a Supabase-ből
+    // Nem bízunk a localStorage-ban, mert az könnyen manipulálható a konzolból.
+    try {
+        if (!supabaseClient) throw new Error("Supabase nincs inicializálva");
+
+        // Lekérjük az aktuális munkamenetet és a felhasználó profilját az adatbázisból
+        const { data: { user: authUser }, error: authError } = await supabaseClient.auth.getUser();
+        
+        if (authError || !authUser) {
+            throw new Error("Nincs érvényes bejelentkezés");
+        }
+
+        const { data: profile, error: profileError } = await supabaseClient
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', authUser.id)
+            .single();
+
+        // Ellenőrizzük az adatbázisból jövő valódi admin státuszt
+        if (profileError || !profile || !profile.is_admin) {
+            throw new Error("Nincs admin jogosultság az adatbázisban");
+        }
+
+        // Ha a szerver is megerősítette a jogosultságot, betölthetjük az adatokat
+        loadOrders();       // Rendelések
+        loadStats();        // Statisztikák (bevétel, stb.)
+        loadCategoriesAdmin(); // Kategóriák a termékfelvételhez
+        setupTabs();        // Fülek közötti navigáció beállítása
+        
+    } catch (err) {
+        console.warn("Hozzáférés megtagadva:", err.message);
+        alert('Nincs jogosultságod ehhez az oldalhoz! Kérlek lépj be egy admin fiókkal.');
+        
+        // Biztonsági okokból töröljük a gyanús localStorage adatot is, ha az admint hazudott
+        if (user.is_admin) {
+            user.is_admin = false;
+            localStorage.setItem('user', JSON.stringify(user));
+        }
+        
+        window.location.href = 'index.html';
+    }
 });
 
 // A fülek (Irányítópult, Rendelések, Termékek) közötti váltás kezelése
