@@ -67,6 +67,7 @@ CREATE TABLE orders (
 CREATE TABLE order_items (
   id SERIAL PRIMARY KEY,
   order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE, -- Melyik rendeléshez tartozik
+  product_id INTEGER REFERENCES products(id),              -- Kapcsolat a termékkel
   product_name TEXT NOT NULL,            -- Termék neve (mentve, ha később törölnék a terméket)
   size TEXT,                             -- A választott méret
   price INTEGER NOT NULL,                -- Eladási ár a vásárlás pillanatában
@@ -103,13 +104,13 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Felhasználók láthatják a saját profiljukat" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Felhasználók frissíthetik a saját profiljukat" ON profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Adminok láthatják az összes profilt" ON profiles FOR SELECT USING (public.is_admin_user());
+CREATE POLICY "Adminok frissíthetik az összes profilt" ON profiles FOR UPDATE USING (public.is_admin_user());
 
 -- Rendelések:
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 -- A felhasználók csak a saját rendeléseiket láthatják
-CREATE POLICY "Felhasználók láthatják a saját rendeléseiket" ON orders FOR SELECT USING (auth.uid() = user_id);
--- Leadhatnak új rendelést
-CREATE POLICY "Felhasználók leadhatnak rendelést" ON orders FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Felhasználók láthatják a saját profiljukat" ON orders FOR SELECT USING (auth.uid() = user_id);
+-- Leadhatnak új rendelést: ELTÁVOLÍTVA (A biztonság érdekében csak a place_order RPC-n keresztül engedélyezett)
 -- Az adminok viszont láthatják az összes beérkező rendelést
 CREATE POLICY "Adminok láthatják az összes rendelést" ON orders FOR SELECT USING (public.is_admin_user());
 -- Adminok frissíthetik a rendelések állapotát
@@ -125,13 +126,7 @@ CREATE POLICY "Felhasználók és adminok láthatják a tételeket" ON order_ite
     AND (orders.user_id = auth.uid() OR public.is_admin_user())
   )
 );
--- Tételek hozzáadása rendeléshez
-CREATE POLICY "Felhasználók hozzáadhatnak tételeket" ON order_items FOR INSERT WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM orders 
-    WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()
-  )
-);
+-- Tételek hozzáadása rendeléshez: ELTÁVOLÍTVA (A biztonság érdekében csak a place_order RPC-n keresztül engedélyezett)
 
 -- ==========================================
 -- AUTOMATIZÁCIÓK (TRIGGEREK ÉS FÜGGVÉNYEK)
@@ -154,6 +149,29 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
+-- Függvény: Jogosultság ellenőrzése (is_admin védelme)
+-- Megakadályozza, hogy a sima felhasználók saját magukat adminná tegyék.
+CREATE OR REPLACE FUNCTION public.preserve_is_admin()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Csak akkor engedjük az is_admin módosítását, ha a műveletet végző felhasználó admin
+  -- (A NEW.is_admin IS DISTINCT FROM OLD.is_admin ellenőrzi, hogy ténylegesen változott-e az érték)
+  IF NEW.is_admin IS DISTINCT FROM OLD.is_admin THEN
+    IF NOT public.is_admin_user() THEN
+      -- Ha nem admin végzi a módosítást, visszaállítjuk az eredeti (OLD) értékre
+      NEW.is_admin := OLD.is_admin;
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger: Minden profil frissítése előtt lefut
+CREATE TRIGGER tr_preserve_is_admin
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.preserve_is_admin();
+
 -- Függvény: Készletkezelés (Méretspecifikus)
 -- Ez a függvény kezeli a készlet levonást és hozzáadást.
 CREATE OR REPLACE FUNCTION public.increment_stock(product_id INT, amount INT, size_val TEXT DEFAULT NULL)
@@ -174,5 +192,68 @@ BEGIN
     SET stock = stock + amount
     WHERE id = product_id;
   END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 6. Biztonságos rendelés leadás (Szerveroldali árkalkulációval)
+-- Ez a függvény garantálja, hogy a vásárló nem tudja módosítani az árakat.
+CREATE OR REPLACE FUNCTION public.place_order(
+  p_items JSONB, 
+  p_shipping_method TEXT, 
+  p_payment_method TEXT,
+  p_customer_name TEXT,
+  p_customer_phone TEXT,
+  p_customer_address TEXT,
+  p_user_email TEXT
+)
+RETURNS iNT AS $$
+DECLARE
+  v_order_id INT;
+  v_total_price INT := 0;
+  v_item RECORD;
+  v_product_price INT;
+  v_product_name TEXT;
+  v_shipping_fee INT := 0;
+BEGIN
+  -- 1. Számoljuk ki a tételek árát a szerver oldalon (az adatbázisban tárolt árak alapján)
+  FOR v_item IN SELECT * FROM jsonb_to_recordset(p_items) AS x(id INT, quantity INT, size TEXT)
+  LOOP
+    SELECT price, name INTO v_product_price, v_product_name FROM public.products WHERE id = v_item.id;
+    
+    IF v_product_price IS NULL THEN
+      RAISE EXCEPTION 'Termék nem található: %', v_item.id;
+    END IF;
+    
+    v_total_price := v_total_price + (v_product_price * v_item.quantity);
+  END LOOP;
+
+  -- 2. Számoljuk ki a szállítási díjat (Szerveroldali szabályok alapján)
+  IF v_total_price < 10000 THEN
+    v_shipping_fee := CASE WHEN p_shipping_method = 'home' THEN 1500 ELSE 990 END;
+  END IF;
+  
+  v_total_price := v_total_price + v_shipping_fee;
+
+  -- 3. Rendelés beszúrása az orders táblába
+  INSERT INTO public.orders (
+    user_id, user_email, total_price, status, 
+    shipping_method, payment_method, customer_name, customer_phone, customer_address
+  ) VALUES (
+    auth.uid(), p_user_email, v_total_price, 'pending',
+    p_shipping_method, p_payment_method, p_customer_name, p_customer_phone, p_customer_address
+  ) RETURNING id INTO v_order_id;
+
+  -- 4. Tételek beszúrása az order_items táblába és készlet levonása
+  FOR v_item IN SELECT * FROM jsonb_to_recordset(p_items) AS x(id INT, quantity INT, size TEXT)
+  LOOP
+    INSERT INTO public.order_items (order_id, product_id, product_name, size, price, quantity)
+    SELECT v_order_id, p.id, p.name, v_item.size, p.price, v_item.quantity
+    FROM public.products p WHERE p.id = v_item.id;
+
+    -- Készlet levonása (a meglévő increment_stock függvény meghívásával)
+    PERFORM public.increment_stock(v_item.id, -v_item.quantity, v_item.size);
+  END LOOP;
+
+  RETURN v_order_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
