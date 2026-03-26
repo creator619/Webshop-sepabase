@@ -408,6 +408,9 @@ async function saveProduct() {
 
         if (result.error) throw result.error;
 
+        // Kinyerjük az azonosítót a sikeres mentés után
+        const savedId = result.data?.id;
+
         // Eltároljuk a méretenkénti bontást a local storage-ban, hogy a vásárlói oldal (script.js) megtalálja
         if (savedId) {
             const stockMap = JSON.parse(localStorage.getItem('customStockMap') || '{}');
