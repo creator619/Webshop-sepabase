@@ -67,7 +67,7 @@ CREATE TABLE orders (
 CREATE TABLE order_items (
   id SERIAL PRIMARY KEY,
   order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE, -- Melyik rendeléshez tartozik
-  product_id INTEGER REFERENCES products(id),              -- Kapcsolat a termékkel
+  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL, -- Kapcsolat a termékkel, ha törlik, NULL lesz
   product_name TEXT NOT NULL,            -- Termék neve (mentve, ha később törölnék a terméket)
   size TEXT,                             -- A választott méret
   price INTEGER NOT NULL,                -- Eladási ár a vásárlás pillanatában
