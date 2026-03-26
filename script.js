@@ -604,50 +604,26 @@ if (window.location.pathname.includes("checkout.html")) {
             }
 
             try {
-                // 1. Session lekérése (fontos, hogy az aktuálisat kapjuk meg)
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                const userId = session?.user?.id || null;
+                // Csak a minimális adatokat küldjük fel (ID, mennyiség, méret), az árat a szerver számolja az adatbázis alapján.
+                // Ez megakadályozza, hogy a vásárló manipulálja az árakat a kliens oldalon.
+                const orderData = {
+                    p_items: cart.map(item => ({
+                        id: item.id,
+                        quantity: item.quantity || 1,
+                        size: item.size || null
+                    })),
+                    p_shipping_method: shippingMethod,
+                    p_payment_method: paymentMethod,
+                    p_customer_name: name,
+                    p_customer_phone: phone,
+                    p_customer_address: address,
+                    p_user_email: email
+                };
 
-                // A végleges árat az updateCheckoutTotal-tól kérjük el újra
-                const checkoutTotal = parseInt(document.getElementById("checkout-total").textContent.replace(/\D/g, ''));
-
-                // 1. Rendelés beszúrása az 'orders' táblába
-                const { data: order, error: orderError } = await supabaseClient.from('orders').insert({
-                    user_email: email,
-                    user_id: userId,
-                    customer_name: name,     // Név mentése
-                    customer_phone: phone,   // Telefon mentése
-                    customer_address: address, // Cím mentése
-                    total_price: checkoutTotal,
-                    status: 'pending',
-                    shipping_method: shippingMethod,
-                    payment_method: paymentMethod
-                }).select().single();
+                // Meghívjuk a biztonságos szerveroldali függvényt (RPC)
+                const { data: orderId, error: orderError } = await supabaseClient.rpc('place_order', orderData);
 
                 if (orderError) throw orderError;
-
-                // 2. Tételek beszúrása az 'order_items' táblába
-                const orderItems = cart.map(item => ({
-                    order_id: order.id,
-                    product_name: item.name,
-                    size: item.size || null,
-                    price: item.price,
-                    quantity: item.quantity || 1
-                }));
-
-                const { error: itemsError } = await supabaseClient.from('order_items').insert(orderItems);
-                if (itemsError) throw itemsError;
-
-                // 3. Készlet levonása a szerver oldalon (meglévő SQL függvényt hívunk)
-                const updatePromises = cart.map(item => {
-                    return supabaseClient.rpc('increment_stock', { 
-                        product_id: item.id, 
-                        amount: -(item.quantity || 1),
-                        size_val: item.size || null // Méret átadása a pontos levonáshoz
-                    });
-                });
-
-                await Promise.all(updatePromises);
 
                 showToast("Rendelés sikeresen leadva!");
                 localStorage.removeItem("cart"); // Kosár ürítése
